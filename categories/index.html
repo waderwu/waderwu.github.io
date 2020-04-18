@@ -25,11 +25,11 @@
   var NexT = window.NexT || {};
   var CONFIG = {
     root: '/',
-    scheme: 'Muse',
+    scheme: 'Gemini',
     version: '7.4.0',
     exturl: false,
     sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
-    copycode: {"enable":false,"show_result":false,"style":null},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
     back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
     bookmark: {"enable":false,"color":"#222","save":"auto"},
     fancybox: false,
@@ -55,15 +55,16 @@
   };
 </script>
 
-  <meta property="og:type" content="website">
+  <meta name="keywords" content="ctf web security">
+<meta property="og:type" content="website">
 <meta property="og:title" content="categories">
-<meta property="og:url" content="http://yoursite.com/categories/index.html">
-<meta property="og:site_name" content="Hexo">
+<meta property="og:url" content="https://blog.sometimenaive.com/categories/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:updated_time" content="2019-09-10T02:26:15.969Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="categories">
-  <link rel="canonical" href="http://yoursite.com/categories/">
+  <link rel="canonical" href="https://blog.sometimenaive.com/categories/">
 
 
 <script id="page-configurations">
@@ -77,7 +78,7 @@
   };
 </script>
 
-  <title>categories | Hexo</title>
+  <title>categories | yxxx's blog</title>
   
 
 
@@ -124,7 +125,7 @@
     <div>
       <a href="/" class="brand" rel="start">
         <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Hexo</span>
+        <span class="site-title">yxxx's blog</span>
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
@@ -158,28 +159,36 @@
       
       
         
-        <li class="menu-item menu-item-archives">
+        <li class="menu-item menu-item-about">
       
     
 
-    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
 
   </li>
   </ul>
-
-    
-
-    
-    
-      
-      
-    
-      
-      
-    
-    
-
-  
 
 </nav>
 </div>
@@ -195,6 +204,26 @@
     <main id="main" class="main">
       <div class="main-inner">
         <div class="content-wrap">
+            
+
+    
+    
+      
+      
+    
+      
+      
+    
+      
+      
+    
+      
+      
+    
+    
+
+  
+
           <div id="content" class="content">
             
 
@@ -226,7 +255,7 @@
               1 category in total
             </div>
             <div class="category-all">
-              <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/websecurity/">websecurity</a><span class="category-list-count">2</span></li></ul>
+              <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/ctf/">ctf</a><span class="category-list-count">2</span></li></ul>
             </div>
           </div>
         
@@ -281,15 +310,15 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">wuyx</p>
+  <p class="site-author-name" itemprop="name">yxxx</p>
   <div class="site-description" itemprop="description"></div>
 </div>
   <nav class="site-state motion-element">
       <div class="site-state-item site-state-posts">
         
-          <a href="/archives/">
+          <a href="/archives">
         
-          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -315,7 +344,7 @@
             <a href="/tags/">
           
         
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">tags</span>
         </a>
       </div>
@@ -340,11 +369,11 @@
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">wuyx</span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
   <span class="post-meta-divider">|</span>
-  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.4.0</div>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
 
         
 
@@ -371,7 +400,8 @@
   <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
   <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
 <script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
-<script src="/js/schemes/muse.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
 <script src="/js/next-boot.js?v=7.4.0"></script>
 
 

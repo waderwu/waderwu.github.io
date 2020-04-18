@@ -25,11 +25,11 @@
   var NexT = window.NexT || {};
   var CONFIG = {
     root: '/',
-    scheme: 'Muse',
+    scheme: 'Gemini',
     version: '7.4.0',
     exturl: false,
     sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
-    copycode: {"enable":false,"show_result":false,"style":null},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
     back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
     bookmark: {"enable":false,"color":"#222","save":"auto"},
     fancybox: false,
@@ -55,14 +55,15 @@
   };
 </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="http://yoursite.com/tags/hello-world/index.html">
-<meta property="og:site_name" content="Hexo">
+  <meta name="keywords" content="ctf web security">
+<meta property="og:type" content="website">
+<meta property="og:title" content="yxxx&#39;s blog">
+<meta property="og:url" content="https://blog.sometimenaive.com/categories/ctf/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
 <meta property="og:locale" content="zh-Hans">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hexo">
-  <link rel="canonical" href="http://yoursite.com/tags/hello-world/">
+<meta name="twitter:title" content="yxxx&#39;s blog">
+  <link rel="canonical" href="https://blog.sometimenaive.com/categories/ctf/">
 
 
 <script id="page-configurations">
@@ -76,7 +77,7 @@
   };
 </script>
 
-  <title>Tag: hello world | Hexo</title>
+  <title>Category: ctf | yxxx's blog</title>
   
 
 
@@ -123,7 +124,7 @@
     <div>
       <a href="/" class="brand" rel="start">
         <span class="logo-line-before"><i></i></span>
-        <span class="site-title">Hexo</span>
+        <span class="site-title">yxxx's blog</span>
         <span class="logo-line-after"><i></i></span>
       </a>
     </div>
@@ -157,28 +158,36 @@
       
       
         
-        <li class="menu-item menu-item-archives">
+        <li class="menu-item menu-item-about">
       
     
 
-    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
 
   </li>
   </ul>
-
-    
-
-    
-    
-      
-      
-    
-      
-      
-    
-    
-
-  
 
 </nav>
 </div>
@@ -194,16 +203,36 @@
     <main id="main" class="main">
       <div class="main-inner">
         <div class="content-wrap">
+            
+
+    
+    
+      
+      
+    
+      
+      
+    
+      
+      
+    
+      
+      
+    
+    
+
+  
+
           <div id="content" class="content">
             
 
   
   
   
-  <div class="post-block tag">
+  <div class="post-block category">
     <div id="posts" class="posts-collapse">
       <div class="collection-title">
-        <h1 class="collection-header">hello world<small>Tag</small>
+        <h1 class="collection-header">ctf<small>Category</small>
         </h1>
       </div>
 
@@ -215,7 +244,7 @@
   
     
     <div class="collection-year">
-      <h1 class="collection-header">2019</h1>
+      <h1 class="collection-header">2020</h1>
     </div>
   
 
@@ -224,17 +253,46 @@
 
       <h2 class="post-title">
         
-          <a class="post-title-link" href="/2019/09/09/Hello-Hexo/" itemprop="url">
-            <span itemprop="name">Hello Hexo</span>
+          <a class="post-title-link" href="/2020/04/18/ezdotso_writeup_race_condition/" itemprop="url">
+            <span itemprop="name">ezdotso-by-race-condition-writeup</span>
           </a>
         
       </h2>
 
       <div class="post-meta">
         <time class="post-time" itemprop="dateCreated"
-              datetime="2019-09-09T22:21:44+08:00"
-              content="2019-09-09">
-          09-09
+              datetime="2020-04-18T16:10:43+08:00"
+              content="2020-04-18">
+          04-18
+        </time>
+      </div>
+
+    </header>
+  </article>
+
+
+
+  
+  
+
+  
+
+  <article itemscope itemtype="http://schema.org/Article">
+    <header class="post-header">
+
+      <h2 class="post-title">
+        
+          <a class="post-title-link" href="/2020/04/18/l33t-writeup/" itemprop="url">
+            <span itemprop="name">l33t writeup</span>
+          </a>
+        
+      </h2>
+
+      <div class="post-meta">
+        <time class="post-time" itemprop="dateCreated"
+              datetime="2020-04-18T15:53:13+08:00"
+              content="2020-04-18">
+          04-18
         </time>
       </div>
 
@@ -286,15 +344,15 @@
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">wuyx</p>
+  <p class="site-author-name" itemprop="name">yxxx</p>
   <div class="site-description" itemprop="description"></div>
 </div>
   <nav class="site-state motion-element">
       <div class="site-state-item site-state-posts">
         
-          <a href="/archives/">
+          <a href="/archives">
         
-          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-count">2</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -320,7 +378,7 @@
             <a href="/tags/">
           
         
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">tags</span>
         </a>
       </div>
@@ -345,11 +403,11 @@
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>
-  <span class="author" itemprop="copyrightHolder">wuyx</span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
 </div>
   <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
   <span class="post-meta-divider">|</span>
-  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.4.0</div>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
 
         
 
@@ -376,7 +434,8 @@
   <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
   <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
 <script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
-<script src="/js/schemes/muse.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
 <script src="/js/next-boot.js?v=7.4.0"></script>
 
 
