@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="问题描述有$n$个物品要放入背包，第$i$个物品的重量是$w_i$ ,价值是$v_i$ 背包的总容量为$c$ , 要选择一部分商品放入背包，使得他们总价值最大。用数学语言描述就是： 在满足$\sum_i^nw_ix_i \leq c$ 的情况下求$max(\sum_i^nvix_i)$ 其中$x_i\in {0,1}$ 背包问题可以看做是一个子集合问题。 使用的benchmark来自https:/">
+<meta name="keywords" content="algorithm">
+<meta property="og:type" content="article">
+<meta property="og:title" content="01knapsack-problem">
+<meta property="og:url" content="https://blog.sometimenaive.com/2020/05/19/01knapsack-problem/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="问题描述有$n$个物品要放入背包，第$i$个物品的重量是$w_i$ ,价值是$v_i$ 背包的总容量为$c$ , 要选择一部分商品放入背包，使得他们总价值最大。用数学语言描述就是： 在满足$\sum_i^nw_ix_i \leq c$ 的情况下求$max(\sum_i^nvix_i)$ 其中$x_i\in {0,1}$ 背包问题可以看做是一个子集合问题。 使用的benchmark来自https:/">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2020-05-19T15:43:48.606Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="01knapsack-problem">
+<meta name="twitter:description" content="问题描述有$n$个物品要放入背包，第$i$个物品的重量是$w_i$ ,价值是$v_i$ 背包的总容量为$c$ , 要选择一部分商品放入背包，使得他们总价值最大。用数学语言描述就是： 在满足$\sum_i^nw_ix_i \leq c$ 的情况下求$max(\sum_i^nvix_i)$ 其中$x_i\in {0,1}$ 背包问题可以看做是一个子集合问题。 使用的benchmark来自https:/">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2020/05/19/01knapsack-problem/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>01knapsack-problem | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2020/05/19/01knapsack-problem/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">01knapsack-problem
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2020-05-19 23:43:48" itemprop="dateCreated datePublished" datetime="2020-05-19T23:43:48+08:00">2020-05-19</time>
+            </span>
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/develop/" itemprop="url" rel="index"><span itemprop="name">develop</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>有$n$个物品要放入背包，第$i$个物品的重量是$w_i$ ,价值是$v_i$ 背包的总容量为$c$ , 要选择一部分商品放入背包，使得他们总价值最大。用数学语言描述就是：</p>
+<p>在满足$\sum_i^nw_i<em>x_i \leq c$ 的情况下求$max(\sum_i^nvi</em>x_i)$ 其中$x_i\in {0,1}$</p>
+<p>背包问题可以看做是一个子集合问题。</p>
+<p>使用的benchmark来自<a href="https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html" target="_blank" rel="noopener">https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html</a></p>
+<h2 id="暴力解法"><a href="#暴力解法" class="headerlink" title="暴力解法"></a>暴力解法</h2><p>算法复杂度为$O(2^n)$</p>
+<p>每种商品都可以选择放或者不放，共用2种情况，n个物品，所以总共有$2^n$ 次可能，暴力遍历所有可能，如果容量没有超过背包则计算其总价值。代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"></span><br><span class="line">n = <span class="number">10</span></span><br><span class="line">c = <span class="number">165</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"value_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    values_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"weight_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    weights_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line">values = list(map(int, values_))</span><br><span class="line">weights = list(map(int, weights_))</span><br><span class="line"></span><br><span class="line">maxValue = <span class="number">0</span></span><br><span class="line">target = <span class="literal">None</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">2</span>**n):</span><br><span class="line">    index = [(i&amp;<span class="number">2</span>**j)&gt;&gt;j <span class="keyword">for</span> j <span class="keyword">in</span> range(n)]</span><br><span class="line">    tmpWeight = sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(weights, index)])</span><br><span class="line">    <span class="keyword">if</span> tmpWeight &gt; c:</span><br><span class="line">        <span class="keyword">continue</span></span><br><span class="line">    tmpValue = sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(values, index)])</span><br><span class="line">    <span class="keyword">if</span> tmpValue &gt; maxValue:</span><br><span class="line">        target = index[:]</span><br><span class="line">        maxValue = tmpValue</span><br><span class="line"></span><br><span class="line">print(maxValue, target)</span><br></pre></td></tr></table></figure>
+
+<h2 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h2><p>算法复杂度为$O(nC)$</p>
+<h3 id="F-i-c"><a href="#F-i-c" class="headerlink" title="$F(i, c)$"></a>$F(i, c)$</h3><p>$F(i,c)$ 表示从前$i$物品选一些物品装入到容量为$c$ 的包内物品最大价值</p>
+<p>那么递推公式就为, 就是考虑第i个物品是否放进去，如果放进去则是（潜在的条件是$w_i\leq c$）$F(i-1, c-w_i)+v_i$  不放的话就是$F(i-1), c$<br>$$<br>F(i,c) = max(F(i-1, c-w_i)+v_i, F(i-1,c))<br>$$</p>
+<p>递归实现代码</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"></span><br><span class="line"><span class="comment"># n = 24</span></span><br><span class="line"><span class="comment"># c = 6404180</span></span><br><span class="line"><span class="comment"># res = 13549094</span></span><br><span class="line">n = <span class="number">10</span></span><br><span class="line">c = <span class="number">165</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"value_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    values = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"weight_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    weights = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line">data = [(int(weight),int(value)) <span class="keyword">for</span> weight, value <span class="keyword">in</span> zip(weights, values)]</span><br><span class="line"></span><br><span class="line"><span class="comment">#p(c) = max(p(c-wi)+vi)</span></span><br><span class="line"><span class="comment">#f[i][c] 表示从前i件中挑选出使得容量为c的背包value最大</span></span><br><span class="line"><span class="comment">#f[i][c] = max(f[i][c-wi]+vi, f[i-1][c])</span></span><br><span class="line"><span class="comment">#复杂度为(CN)</span></span><br><span class="line">dp = &#123;&#125;</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">dynaymic_program</span><span class="params">(i, c)</span>:</span></span><br><span class="line">    <span class="comment"># print(i,c)</span></span><br><span class="line">    <span class="keyword">if</span> i == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">if</span> data[i][<span class="number">0</span>] &lt;= c:</span><br><span class="line">            dp[(i,c)] = data[i][<span class="number">1</span>]</span><br><span class="line">            <span class="keyword">return</span> data[i][<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            dp[(i,c)] = <span class="number">0</span></span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (i,c) <span class="keyword">in</span> dp:</span><br><span class="line">        <span class="keyword">return</span> dp[(i,c)]</span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        r1 = dynaymic_program(i<span class="number">-1</span>, c)</span><br><span class="line">        r2 = <span class="number">0</span></span><br><span class="line">        <span class="keyword">if</span> c - data[i][<span class="number">0</span>] &gt;= <span class="number">0</span>:</span><br><span class="line">            r2 = dynaymic_program(i<span class="number">-1</span>, c - data[i][<span class="number">0</span>]) + data[i][<span class="number">1</span>]</span><br><span class="line">        <span class="comment"># if r1 &lt; r2:</span></span><br><span class="line">        <span class="comment">#     choice.append(data[i])</span></span><br><span class="line"></span><br><span class="line">        dp[(i,c)] = max(r1, r2)</span><br><span class="line">        <span class="keyword">return</span> max(r1, r2)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_Solution</span><span class="params">()</span>:</span></span><br><span class="line">    choice = [<span class="number">0</span>]*n</span><br><span class="line">    tmpc = c</span><br><span class="line">    index = n<span class="number">-1</span></span><br><span class="line">    <span class="keyword">while</span> index &gt; <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">if</span> tmpc - data[index][<span class="number">0</span>] &lt; <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">if</span> dp[(index,tmpc)] &gt; dp[(index<span class="number">-1</span>, tmpc)]:</span><br><span class="line">            choice[index] = <span class="number">1</span></span><br><span class="line">            tmpc = tmpc-data[index][<span class="number">0</span>]</span><br><span class="line">        </span><br><span class="line">        index = index - <span class="number">1</span></span><br><span class="line">    <span class="keyword">if</span> tmpc == data[<span class="number">0</span>][<span class="number">0</span>]:</span><br><span class="line">        choice[<span class="number">0</span>] = <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> choice</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    ret = dynaymic_program(n<span class="number">-1</span>, c)</span><br><span class="line">    print(ret)</span><br><span class="line">    choice = get_Solution()</span><br><span class="line">    print(choice)</span><br><span class="line">    <span class="comment"># print(dp)</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="F-i-v"><a href="#F-i-v" class="headerlink" title="$F(i,v)$"></a>$F(i,v)$</h3><p>算法复杂度为$n^2V$  其中V为$max(v_i)$</p>
+<p>$F(i,v)$ 表示前$i$个物品中刚好能选出一部分物品其总价值$v$, 所需要的最小容量。如果第i个物品被选中(潜在的条件是$v_i &lt; v$) </p>
+<p>$F(i,v) = F(i-1, v-v_i)+w_i$  如果不放则递推为</p>
+<p>$F(i,v) = F(i-1,v)$ 两者选最小值</p>
+<p>如果不能从前i个里面选出部分物品是其总价值刚好是v，则返回无穷大</p>
+<p>迭代实现代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"></span><br><span class="line"><span class="comment"># n = 24</span></span><br><span class="line"><span class="comment"># c = 6404180</span></span><br><span class="line"><span class="comment"># res = 13549094</span></span><br><span class="line">n = <span class="number">10</span></span><br><span class="line">c = <span class="number">165</span></span><br><span class="line">n = <span class="number">15</span></span><br><span class="line">c = <span class="number">750</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"value_15_750"</span>) <span class="keyword">as</span> f:</span><br><span class="line">    values_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"weight_15_750"</span>) <span class="keyword">as</span> f:</span><br><span class="line">    weights_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line">values = list(map(int, values_))</span><br><span class="line">weights = list(map(int, weights_))</span><br><span class="line">data = [(weight,value) <span class="keyword">for</span> weight, value <span class="keyword">in</span> zip(weights, values)]</span><br><span class="line"></span><br><span class="line"><span class="comment">#f(i,v) 表示从前i件中挑选出使得价值为v,并且是size最小, 如果找不到就无穷大</span></span><br><span class="line"><span class="comment">#f(i,v) 表示</span></span><br><span class="line"><span class="comment">#V = max(v)</span></span><br><span class="line"><span class="comment">#复杂度为(n**2 * V)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_Solution</span><span class="params">(j)</span>:</span></span><br><span class="line">    choice = [<span class="number">0</span>]*n</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(n<span class="number">-1</span>, <span class="number">0</span>, <span class="number">-1</span>):</span><br><span class="line">        <span class="keyword">if</span> dp[i][j] != dp[i<span class="number">-1</span>][j]:</span><br><span class="line">            choice[i] = <span class="number">1</span></span><br><span class="line">            j = j - values[i]</span><br><span class="line">        <span class="keyword">if</span> j == values[<span class="number">0</span>]:</span><br><span class="line">            choice[<span class="number">0</span>] = <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> choice</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    V = max(values)</span><br><span class="line">    ret = []</span><br><span class="line">    target = <span class="number">0</span></span><br><span class="line">    index = <span class="literal">None</span></span><br><span class="line">    dp = [[sys.maxsize]*(n*V) <span class="keyword">for</span> __ <span class="keyword">in</span> range(n)]</span><br><span class="line">    dp[<span class="number">0</span>][values[<span class="number">0</span>]] = weights[<span class="number">0</span>]</span><br><span class="line">    <span class="comment"># print(dp)</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1</span>,n):</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> range(n*V):</span><br><span class="line">            <span class="keyword">if</span> j - values[i] &gt;= <span class="number">0</span>:</span><br><span class="line">                dp[i][j] = min(dp[i<span class="number">-1</span>][j], dp[i<span class="number">-1</span>][j-values[i]]+weights[i])</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                dp[i][j] = dp[i<span class="number">-1</span>][j]</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">if</span> dp[i][j] &lt;= c:</span><br><span class="line">                target = j</span><br><span class="line">                index = (i,j)</span><br><span class="line">    print(target)</span><br><span class="line">    choice = get_Solution(target)</span><br><span class="line">    print(choice)</span><br></pre></td></tr></table></figure>
+
+<h2 id="近似算法"><a href="#近似算法" class="headerlink" title="近似算法"></a>近似算法</h2><p>近似算法是根据上面的$F(i,v)$ 改进的。</p>
+<p>背包问题的FPTAS，能够在n和$\frac{1}{\epsilon}$ 的多项式时间得到一个结果至少为$(1-\epsilon)*OPT$</p>
+<p>算法复杂度为$O(n^2\lfloor\frac{n}{\epsilon}\rfloor)$ </p>
+<p>算法的核心思想是将$v_i$ 进行放缩</p>
+<ol>
+<li>给定$\epsilon &gt; 0$ 设$K = \frac{\epsilon V}{n}$  ， $V=max(v_i)$ </li>
+<li>计算$v_i^{‘} = \lfloor \frac{v_i}{K}\rfloor$ </li>
+<li>然后根据新的$v_i’$ 利用$F(i,v)$ 计算背包问题，输出解 </li>
+</ol>
+<p>下面给出<strong>证明</strong></p>
+<p>因为$v_i^{‘} = \lfloor \frac{v_i}{K}\rfloor$<br>$$<br>\frac{v_i}{K}-1 &lt; v_i’ \leq \frac{v_i}{K}<br>$$<br>所以<br>$$<br>v_i -K &lt; K<em>v_i’ \leq v_i<br>$$<br>所以<br>$$<br>v_i - K</em>v_i’ &lt; K<br>$$<br>所以$xi \in O$ ， $O$ 为原始背包问题的最优解<br>$$<br>\sum_{x_i \in O}v_i - K\sum_{x_i \in O}v_i’ &lt; nK<br>$$<br>所以<br>$$<br>\sum_{x_i \in O}v_i - nK &lt; K\sum_{x_i \in O}v_i’<br>$$<br>对于放缩后的背包问题的最优解为$S’$ 有<br>$$<br>K\sum_{x_i \in O}v_i’ \leq K\sum_{x_i \in S’}v_i’<br>$$<br>即<br>$$<br>OPT - \epsilon V = \sum_{x_i \in O}v_i - nK &lt; K\sum_{x_i \in O}v_i’ \leq K\sum_{x_i \in S’}v_i’<br>$$<br>有因为$V \leq OPT$ 所以<br>$$<br>(1-\epsilon)OPT \leq K\sum_{x_i \in S’}v_i’<br>$$</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="keyword">import</span> sys </span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="comment"># n = 24</span></span><br><span class="line"><span class="comment"># c = 6404180</span></span><br><span class="line"><span class="comment"># res = 13549094</span></span><br><span class="line">n = <span class="number">10</span></span><br><span class="line">c = <span class="number">165</span></span><br><span class="line">n = <span class="number">15</span></span><br><span class="line">c = <span class="number">750</span></span><br><span class="line">n = <span class="number">24</span></span><br><span class="line">c = <span class="number">6404180</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"value"</span>) <span class="keyword">as</span> f:</span><br><span class="line">    values_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"weight"</span>) <span class="keyword">as</span> f:</span><br><span class="line">    weights_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line">values = list(map(int, values_))</span><br><span class="line">weights = list(map(int, weights_))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">#f(i,v) 表示从前i件中挑选出使得价值为v,并且是size最小, 如果找不到就无穷大</span></span><br><span class="line"><span class="comment">#f(i,v) 表示</span></span><br><span class="line"><span class="comment">#V = max(v)</span></span><br><span class="line"><span class="comment">#复杂度为(n**2 * V)</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">get_Solution</span><span class="params">(j)</span>:</span></span><br><span class="line">    choice = [<span class="number">0</span>]*n</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(n<span class="number">-1</span>, <span class="number">0</span>, <span class="number">-1</span>):</span><br><span class="line">        <span class="keyword">if</span> dp[i][j] != dp[i<span class="number">-1</span>][j]:</span><br><span class="line">            choice[i] = <span class="number">1</span></span><br><span class="line">            j = j - newValues[i]</span><br><span class="line">        <span class="keyword">if</span> j == newValues[<span class="number">0</span>]:</span><br><span class="line">            choice[<span class="number">0</span>] = <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> choice</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    V = max(values)</span><br><span class="line">    alpha = <span class="number">0.1</span></span><br><span class="line">    K = (alpha*V)/n</span><br><span class="line">    newValues = [math.floor((value*n)/(alpha*V)) <span class="keyword">for</span> value <span class="keyword">in</span> values]</span><br><span class="line">    print(values)</span><br><span class="line">    print(newValues)</span><br><span class="line">    target = <span class="number">0</span></span><br><span class="line">    newV = max(newValues)</span><br><span class="line">    dp = [[sys.maxsize]*(n*newV) <span class="keyword">for</span> __ <span class="keyword">in</span> range(n)]</span><br><span class="line">    dp[<span class="number">0</span>][newValues[<span class="number">0</span>]] = weights[<span class="number">0</span>]</span><br><span class="line">    <span class="comment"># print(dp)</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1</span>,n):</span><br><span class="line">        <span class="keyword">for</span> j <span class="keyword">in</span> range(n*newV):</span><br><span class="line">            <span class="keyword">if</span> j - newValues[i] &gt;= <span class="number">0</span>:</span><br><span class="line">                dp[i][j] = min(dp[i<span class="number">-1</span>][j], dp[i<span class="number">-1</span>][j-newValues[i]]+weights[i])</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                dp[i][j] = dp[i<span class="number">-1</span>][j]</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">if</span> dp[i][j] &lt;= c:</span><br><span class="line">                <span class="comment"># print(i,j)</span></span><br><span class="line">                <span class="comment"># print(dp[i][j])</span></span><br><span class="line">                target = j</span><br><span class="line">    print(target)</span><br><span class="line">    choice = get_Solution(target)</span><br><span class="line">    print(choice)</span><br><span class="line">    total = sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(values, choice)])</span><br><span class="line">    print(total)</span><br></pre></td></tr></table></figure>
+
+<h2 id="启发式算法"><a href="#启发式算法" class="headerlink" title="启发式算法"></a>启发式算法</h2><h3 id="模拟退火"><a href="#模拟退火" class="headerlink" title="模拟退火"></a>模拟退火</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line">n = <span class="number">24</span></span><br><span class="line">c = <span class="number">6404180</span></span><br><span class="line">res = <span class="number">13549094</span></span><br><span class="line"><span class="comment"># n = 15</span></span><br><span class="line"><span class="comment"># c = 750</span></span><br><span class="line"><span class="comment"># n = 10</span></span><br><span class="line"><span class="comment"># c = 165</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"value_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    values_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"weight_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    weights_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line">values = list(map(int, values_))</span><br><span class="line">weights = list(map(int, weights_))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">alpha = <span class="number">0.999</span></span><br><span class="line">initTemperature = <span class="number">1000</span></span><br><span class="line">loops = <span class="number">10000</span></span><br><span class="line">smloop = <span class="number">100</span></span><br><span class="line"></span><br><span class="line">sol = [<span class="number">0</span>]*n</span><br><span class="line">temperature = initTemperature</span><br><span class="line">loop = <span class="number">0</span></span><br><span class="line">maxValue = <span class="number">0</span></span><br><span class="line">final_sol = <span class="literal">None</span></span><br><span class="line"><span class="keyword">while</span> loop &lt; loops:</span><br><span class="line">    temperature = temperature*alpha</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(smloop):</span><br><span class="line">        index = random.choice(range(n))</span><br><span class="line">        <span class="keyword">if</span> sol[index] == <span class="number">0</span>:</span><br><span class="line">            sol[index] = <span class="number">1</span></span><br><span class="line">            weight_sum = sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(weights, sol)])</span><br><span class="line">            <span class="keyword">if</span> weight_sum &lt;= c:</span><br><span class="line">                value_sum = sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(values, sol)])</span><br><span class="line">                <span class="keyword">if</span> value_sum &gt; maxValue:</span><br><span class="line">                    maxValue = value_sum</span><br><span class="line">                    final_sol = sol[:]</span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                sol[index] = <span class="number">0</span></span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">        <span class="keyword">else</span>:<span class="comment">#sol[index] == 1, 1 -&gt; 0</span></span><br><span class="line">            <span class="comment">#px - py = values[index]</span></span><br><span class="line">            <span class="keyword">if</span> random.random() &gt; math.exp(-values[index]/temperature):</span><br><span class="line">                sol[index] = <span class="number">0</span></span><br><span class="line">    loop = loop + <span class="number">1</span></span><br><span class="line">print(final_sol)</span><br><span class="line">print(sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(values, final_sol)]))</span><br></pre></td></tr></table></figure>
+
+<h3 id="Tabu"><a href="#Tabu" class="headerlink" title="Tabu"></a>Tabu</h3><p>禁忌搜索非常依赖参数，当我把循环次数设置为2000，listsize设置为2000前两个才能达到最大值。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> random</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">from</span> collections <span class="keyword">import</span> deque</span><br><span class="line"></span><br><span class="line">n = <span class="number">24</span></span><br><span class="line">c = <span class="number">6404180</span></span><br><span class="line">res = <span class="number">13549094</span></span><br><span class="line"><span class="comment"># n = 15</span></span><br><span class="line"><span class="comment"># c = 750</span></span><br><span class="line"><span class="comment"># n = 10</span></span><br><span class="line"><span class="comment"># c = 165</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"value_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    values_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"weight_&#123;&#125;_&#123;&#125;"</span>.format(n, c)) <span class="keyword">as</span> f:</span><br><span class="line">    weights_ = f.read().split(<span class="string">"\n"</span>)</span><br><span class="line"></span><br><span class="line">values = list(map(int, values_))</span><br><span class="line">weights = list(map(int, weights_))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">nerbo</span><span class="params">(sol)</span>:</span></span><br><span class="line">    res = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(n):</span><br><span class="line">        tmp = sol[:]</span><br><span class="line">        tmp[i] = ~tmp[i] + <span class="number">2</span></span><br><span class="line">        res.append(tmp)</span><br><span class="line">    <span class="keyword">return</span> res</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">tabuSearch</span><span class="params">(sol)</span>:</span></span><br><span class="line">    final_sol = <span class="literal">None</span></span><br><span class="line">    final_val = <span class="number">0</span></span><br><span class="line">    loop = <span class="number">0</span></span><br><span class="line">    current_sol = sol</span><br><span class="line">    <span class="keyword">while</span> loop &lt; loops:</span><br><span class="line">        <span class="comment"># print("current_sol: ", current_sol)</span></span><br><span class="line">        nerbos = nerbo(current_sol)</span><br><span class="line">        current_val = <span class="number">0</span></span><br><span class="line">        <span class="keyword">for</span> ner <span class="keyword">in</span> nerbos:</span><br><span class="line">            <span class="comment"># print(ner)</span></span><br><span class="line">            <span class="keyword">if</span> ner <span class="keyword">in</span> tabuList:</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">            weight_sum = sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(weights, ner)])</span><br><span class="line">            <span class="keyword">if</span> weight_sum &gt; c:</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">            value_sum = sum([i*j <span class="keyword">for</span> i,j <span class="keyword">in</span> zip(values, ner)])</span><br><span class="line">            <span class="comment"># print(value_sum)</span></span><br><span class="line">            <span class="keyword">if</span> value_sum &gt; current_val:</span><br><span class="line">                current_val = value_sum</span><br><span class="line">                current_sol = ner</span><br><span class="line">        tabuList.append(current_sol)</span><br><span class="line">        <span class="comment"># print(tabuList)</span></span><br><span class="line">        <span class="comment"># print(current_sol)</span></span><br><span class="line">        <span class="comment"># print(current_val)</span></span><br><span class="line">        <span class="keyword">if</span> final_val &lt; current_val:</span><br><span class="line">            final_val = current_val</span><br><span class="line">            final_sol = current_sol</span><br><span class="line">        loop = loop + <span class="number">1</span></span><br><span class="line">    print(final_sol, final_val)</span><br><span class="line">    <span class="keyword">return</span> final_sol, final_val</span><br><span class="line">                </span><br><span class="line">        </span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">test</span><span class="params">()</span>:</span></span><br><span class="line">    test_sol = [<span class="number">0</span>]*n</span><br><span class="line">    ner = nerbo(test_sol)</span><br><span class="line">    print(ner)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    tabuList = deque(maxlen=<span class="number">2000</span>)</span><br><span class="line">    loops = <span class="number">2000</span></span><br><span class="line"></span><br><span class="line">    sol = [<span class="number">0</span>]*n</span><br><span class="line">    final_sol = <span class="literal">None</span></span><br><span class="line">    tabuSearch(sol)</span><br></pre></td></tr></table></figure>
+
+<p>在上述的参数下跑n=24的情况，得到的效果比较差。</p>
+<h2 id="结果比较"><a href="#结果比较" class="headerlink" title="结果比较"></a>结果比较</h2><table>
+<thead>
+<tr>
+<th></th>
+<th>暴力</th>
+<th>$F(i,c)$</th>
+<th>$F(i,v)$</th>
+<th>FPTAS</th>
+<th>SA</th>
+<th>Tabu</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>n=10,c=165</td>
+<td>309</td>
+<td>309</td>
+<td>309</td>
+<td>309</td>
+<td>309</td>
+<td>309</td>
+</tr>
+<tr>
+<td>n=15,c=750</td>
+<td>1458</td>
+<td>1458</td>
+<td>1458</td>
+<td>1458</td>
+<td>1458</td>
+<td>1458</td>
+</tr>
+<tr>
+<td>n=24,c=6404180</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>N/A</td>
+<td>13549094</td>
+<td>13518963</td>
+<td>13390333</td>
+</tr>
+</tbody></table>
+<p>从上面可以看到当数据比较大时，普通算法不能在可接受的时间内计算出结果。</p>
+<p>总上FPTAS的效果最佳（求解出的都是最有结果），SA次之，可能加大循环次数能再提高点精度。就启发式算法而言，模拟退火要优于禁忌搜索。</p>
+<p>有时间再补个遗传变异算法。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><p><a href="http://home.ustc.edu.cn/~huang83/turing/alg5.pdf" target="_blank" rel="noopener">http://home.ustc.edu.cn/~huang83/turing/alg5.pdf</a></p>
+</li>
+<li><p><a href="http://diaorui.net/archives/567" target="_blank" rel="noopener">http://diaorui.net/archives/567</a></p>
+</li>
+<li><p><a href="https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html" target="_blank" rel="noopener">https://people.sc.fsu.edu/~jburkardt/datasets/knapsack_01/knapsack_01.html</a></p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/algorithm/" rel="tag"># algorithm</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2020/05/19/codeql-structs-xml-deserialization/" rel="next" title="Learn CodeQL for Java by workshop">
+                  <i class="fa fa-chevron-left"></i> Learn CodeQL for Java by workshop
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题描述"><span class="nav-number">1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#暴力解法"><span class="nav-number">2.</span> <span class="nav-text">暴力解法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#动态规划"><span class="nav-number">3.</span> <span class="nav-text">动态规划</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#F-i-c"><span class="nav-number">3.1.</span> <span class="nav-text">$F(i, c)$</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#F-i-v"><span class="nav-number">3.2.</span> <span class="nav-text">$F(i,v)$</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#近似算法"><span class="nav-number">4.</span> <span class="nav-text">近似算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#启发式算法"><span class="nav-number">5.</span> <span class="nav-text">启发式算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#模拟退火"><span class="nav-number">5.1.</span> <span class="nav-text">模拟退火</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Tabu"><span class="nav-number">5.2.</span> <span class="nav-text">Tabu</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结果比较"><span class="nav-number">6.</span> <span class="nav-text">结果比较</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
