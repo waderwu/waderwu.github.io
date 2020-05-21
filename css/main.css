@@ -1719,7 +1719,7 @@ article:last-child .post-eof {
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #bfffff;
+  background: #ffd962;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
@@ -2353,6 +2353,14 @@ ul.breadcrumb li + li:last-child {
 }
 .content-wrap {
   width: calc(100% - 260px);
+}
+@media (max-width: 767px) {
+  .content-wrap {
+    border-radius: initial;
+    min-height: auto;
+    padding: 20px;
+    width: 100%;
+  }
 }
 .site-brand-container {
   position: relative;
