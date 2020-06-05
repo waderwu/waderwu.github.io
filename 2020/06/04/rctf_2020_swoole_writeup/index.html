@@ -71,7 +71,7 @@
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200601181034374.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200602095531988.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/6/image-20200602160316294.png">
-<meta property="og:updated_time" content="2020-06-04T02:09:26.715Z">
+<meta property="og:updated_time" content="2020-06-05T13:04:58.342Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="rctf-2020-swoole-writeup">
 <meta name="twitter:description" content="上周末打了由ROIS举办的RCTF2020，zsx出了道php 反序列化的签到题-swoole（一下午出完了），然而我肝了两天，但是没有做出来。 这道题和以往找thinkphp的pop gadget不太一样，以往的难度是php文件数量多，方法多，硬着头皮找基本都能找到能够可控的参数。（上述类型的机械劳动应该能用程序搞定，codeql快支持全世界最好的语言呀，或者用AST自己撸一个，甚至有篇pape">
@@ -255,11 +255,19 @@
                 
               
 
-              <time title="Created: 2020-06-04 10:00:17 / Modified: 10:09:26" itemprop="dateCreated datePublished" datetime="2020-06-04T10:00:17+08:00">2020-06-04</time>
+              <time title="Created: 2020-06-04 10:00:17" itemprop="dateCreated datePublished" datetime="2020-06-04T10:00:17+08:00">2020-06-04</time>
             </span>
           
             
 
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-05 21:04:58" itemprop="dateModified" datetime="2020-06-05T21:04:58+08:00">2020-06-05</time>
+              </span>
             
           
             <span class="post-meta-item">
@@ -440,7 +448,7 @@
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> $hh = <span class="string">"curl 127.0.0.1:8890"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">run</span><span class="params">()</span></span>&#123;</span><br><span class="line">        array_walk(<span class="keyword">$this</span>, <span class="string">"exec"</span>, <span class="number">123</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">$a = <span class="keyword">new</span> A();</span><br><span class="line">$a-&gt;run();</span><br></pre></td></tr></table></figure>
 <p>是能够执行的。</p>
 <p>你以为到这里就结束了，我本来以为到这里就结束了，但是看writeup 发现用了两次<code>array_walk</code> 这是为啥呢？</p>
-<p>好像由于命名空间的问题，调用exec实际调的是<code>swoole_exec</code> 如果一个不成功，他产生的不是<code>warning</code>，而是<code>fatal error</code> 就不往下执行了。</p>
+<p><del>好像由于命名空间的问题</del>，在这里进行了hook，<a href="https://github.com/swoole/swoole-src/blob/f1a66611d8779114afbb0638d18c528689194ac8/swoole_runtime.cc#L1270" target="_blank" rel="noopener">https://github.com/swoole/swoole-src/blob/f1a66611d8779114afbb0638d18c528689194ac8/swoole_runtime.cc#L1270</a> 调用exec实际调的是<code>swoole_exec</code> 如果一个不成功，他产生的不是<code>warning</code>，而是<code>fatal error</code> 就不往下执行了。</p>
 <p>不知道array_walk 第一个遍历的是啥，看了一下顺序貌似是变量定义的顺序。<del>也许我们在反序列化的时候将要执行的变量放到第一个就能执行了</del>。试试。不行，是根据定义的时候的顺序决定的。<code>Handler</code> 第一个变量是<code>clinet</code> 不能随便赋值成要执行的命令，后面会用到他。所以还得想个办法让他能够遍历到我们控制的那个属性。wupco是再次利用<code>array_walk</code> </p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">array_walk($this, array_walk, 123);</span><br></pre></td></tr></table></figure>
 <p>遇到第一个属性<code>client</code>的时候</p>
