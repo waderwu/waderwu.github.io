@@ -55,22 +55,22 @@
   };
 </script>
 
-  <meta name="description" content="TWIG 全版本 通用 SSTI payload上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。 payloads直接上结论，下面的payload在Twig 3.x 版本测试通过，看了1.x和2.x版本的代码，应该也是可以利用的。  {{[&amp;quot;i">
+  <meta name="description" content="上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。 payloads直接上结论，下面的payload在Twig 3.x 版本测试通过，看了1.x和2.x版本的代码，应该也是可以利用的。  {{[&amp;quot;id&amp;quot;]|map(&amp;quot;syste">
 <meta name="keywords" content="php,ssti">
 <meta property="og:type" content="article">
-<meta property="og:title" content="twig3.x-ssti-payloads">
+<meta property="og:title" content="TWIG 全版本通用 SSTI payloads">
 <meta property="og:url" content="https://blog.sometimenaive.com/2020/04/10/twig3.x-ssti-payloads/index.html">
 <meta property="og:site_name" content="yxxx&#39;s blog">
-<meta property="og:description" content="TWIG 全版本 通用 SSTI payload上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。 payloads直接上结论，下面的payload在Twig 3.x 版本测试通过，看了1.x和2.x版本的代码，应该也是可以利用的。  {{[&amp;quot;i">
+<meta property="og:description" content="上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。 payloads直接上结论，下面的payload在Twig 3.x 版本测试通过，看了1.x和2.x版本的代码，应该也是可以利用的。  {{[&amp;quot;id&amp;quot;]|map(&amp;quot;syste">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200331185804395.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200331155958489.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200331160420542.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200331164005226.png">
-<meta property="og:updated_time" content="2020-05-21T10:45:04.057Z">
+<meta property="og:updated_time" content="2020-06-06T13:26:40.898Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="twig3.x-ssti-payloads">
-<meta name="twitter:description" content="TWIG 全版本 通用 SSTI payload上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。 payloads直接上结论，下面的payload在Twig 3.x 版本测试通过，看了1.x和2.x版本的代码，应该也是可以利用的。  {{[&amp;quot;i">
+<meta name="twitter:title" content="TWIG 全版本通用 SSTI payloads">
+<meta name="twitter:description" content="上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。 payloads直接上结论，下面的payload在Twig 3.x 版本测试通过，看了1.x和2.x版本的代码，应该也是可以利用的。  {{[&amp;quot;id&amp;quot;]|map(&amp;quot;syste">
 <meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200331185804395.png">
   <link rel="canonical" href="https://blog.sometimenaive.com/2020/04/10/twig3.x-ssti-payloads/">
 
@@ -86,7 +86,7 @@
   };
 </script>
 
-  <title>twig3.x-ssti-payloads | yxxx's blog</title>
+  <title>TWIG 全版本通用 SSTI payloads | yxxx's blog</title>
   
 
 
@@ -235,7 +235,7 @@
       <meta itemprop="name" content="yxxx's blog">
     </span>
       <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">twig3.x-ssti-payloads
+        <h1 class="post-title" itemprop="name headline">TWIG 全版本通用 SSTI payloads
 
           
         </h1>
@@ -262,7 +262,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-21 18:45:04" itemprop="dateModified" datetime="2020-05-21T18:45:04+08:00">2020-05-21</time>
+                <time title="Modified: 2020-06-06 21:26:40" itemprop="dateModified" datetime="2020-06-06T21:26:40+08:00">2020-06-06</time>
               </span>
             
           
@@ -291,7 +291,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="TWIG-全版本-通用-SSTI-payload"><a href="#TWIG-全版本-通用-SSTI-payload" class="headerlink" title="TWIG 全版本 通用 SSTI payload"></a>TWIG 全版本 通用 SSTI payload</h1><p>上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。</p>
+        <p>上次发了一篇Twig 3.x with Symfony的SSTI利用方法，这几天刷twitter的时候又看到了一篇writeup，里面提到了另外一种rce的方法，这种方法不依赖于Symfony。</p>
 <h2 id="payloads"><a href="#payloads" class="headerlink" title="payloads"></a>payloads</h2><p>直接上结论，下面的payload在Twig 3.x 版本测试通过，看了1.x和2.x版本的代码，应该也是可以利用的。</p>
 <ul>
 <li><code>{{[&quot;id&quot;]|map(&quot;system&quot;)|join(&quot;,&quot;)}}</code></li>
@@ -402,7 +402,7 @@
           <div class="post-nav">
             <div class="post-nav-next post-nav-item">
               
-                <a href="/2020/04/08/twig3.x-with-symfony-ssti/" rel="next" title="twig 3.x with symfony ssti payloads">
+                <a href="/2020/04/08/twig3.x-with-symfony-ssti-payloads/" rel="next" title="twig 3.x with symfony ssti payloads">
                   <i class="fa fa-chevron-left"></i> twig 3.x with symfony ssti payloads
                 </a>
               
@@ -412,8 +412,8 @@
 
             <div class="post-nav-prev post-nav-item">
               
-                <a href="/2020/05/20/01knapsack-problem/" rel="prev" title="01knapsack-problem">
-                  01knapsack-problem <i class="fa fa-chevron-right"></i>
+                <a href="/2020/05/20/01knapsack-problem/" rel="prev" title="01背包问题四类解法">
+                  01背包问题四类解法 <i class="fa fa-chevron-right"></i>
                 </a>
               
             </div>
@@ -463,7 +463,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TWIG-全版本-通用-SSTI-payload"><span class="nav-number">1.</span> <span class="nav-text">TWIG 全版本 通用 SSTI payload</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#payloads"><span class="nav-number">1.1.</span> <span class="nav-text">payloads</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">1.2.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#map"><span class="nav-number">1.2.1.</span> <span class="nav-text">map</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sort"><span class="nav-number">1.2.2.</span> <span class="nav-text">sort</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#filter"><span class="nav-number">1.2.3.</span> <span class="nav-text">filter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reduce"><span class="nav-number">1.2.4.</span> <span class="nav-text">reduce</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">1.3.</span> <span class="nav-text">参考链接</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#payloads"><span class="nav-number">1.</span> <span class="nav-text">payloads</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析"><span class="nav-number">2.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#map"><span class="nav-number">2.1.</span> <span class="nav-text">map</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sort"><span class="nav-number">2.2.</span> <span class="nav-text">sort</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#filter"><span class="nav-number">2.3.</span> <span class="nav-text">filter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reduce"><span class="nav-number">2.4.</span> <span class="nav-text">reduce</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">3.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
         
       </div>
       <!--/noindex-->

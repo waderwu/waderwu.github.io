@@ -58,8 +58,8 @@
   <meta name="description" content="本文主要内容有：  如何查找函数调用 如何查找属性使用 如何进行数据流分析 寻找fastjson jndi反序列化链  Workshop 学习这部分是学习这个codeql的workshop的笔记。Struts 有个漏洞 CVE-2017-9805 ，是由于用户控制的输入直接传到了XStream.fromXML，造成了反序列化漏洞。这个workshop主要是分析如何利用codeql数据流分析功能找到">
 <meta name="keywords" content="codeql,java,code-static-analysis">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Learn CodeQL for Java by workshop">
-<meta property="og:url" content="https://blog.sometimenaive.com/2020/05/21/codeql-structs-xml-deserialization/index.html">
+<meta property="og:title" content="CodeQL 污点分析寻找fastjson jndi链">
+<meta property="og:url" content="https://blog.sometimenaive.com/2020/05/21/find-fastjson-jndi-gadget-by-codeql-tainttracking/index.html">
 <meta property="og:site_name" content="yxxx&#39;s blog">
 <meta property="og:description" content="本文主要内容有：  如何查找函数调用 如何查找属性使用 如何进行数据流分析 寻找fastjson jndi反序列化链  Workshop 学习这部分是学习这个codeql的workshop的笔记。Struts 有个漏洞 CVE-2017-9805 ，是由于用户控制的输入直接传到了XStream.fromXML，造成了反序列化漏洞。这个workshop主要是分析如何利用codeql数据流分析功能找到">
 <meta property="og:locale" content="zh-Hans">
@@ -79,12 +79,12 @@
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200516145514480.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200516153812978.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200516154142273.png">
-<meta property="og:updated_time" content="2020-05-21T10:42:04.322Z">
+<meta property="og:updated_time" content="2020-06-06T13:30:36.214Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Learn CodeQL for Java by workshop">
+<meta name="twitter:title" content="CodeQL 污点分析寻找fastjson jndi链">
 <meta name="twitter:description" content="本文主要内容有：  如何查找函数调用 如何查找属性使用 如何进行数据流分析 寻找fastjson jndi反序列化链  Workshop 学习这部分是学习这个codeql的workshop的笔记。Struts 有个漏洞 CVE-2017-9805 ，是由于用户控制的输入直接传到了XStream.fromXML，造成了反序列化漏洞。这个workshop主要是分析如何利用codeql数据流分析功能找到">
 <meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200515193433756.png">
-  <link rel="canonical" href="https://blog.sometimenaive.com/2020/05/21/codeql-structs-xml-deserialization/">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2020/05/21/find-fastjson-jndi-gadget-by-codeql-tainttracking/">
 
 
 <script id="page-configurations">
@@ -98,7 +98,7 @@
   };
 </script>
 
-  <title>Learn CodeQL for Java by workshop | yxxx's blog</title>
+  <title>CodeQL 污点分析寻找fastjson jndi链 | yxxx's blog</title>
   
 
 
@@ -235,7 +235,7 @@
   
   
   <div class="post-block post">
-    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2020/05/21/codeql-structs-xml-deserialization/">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2020/05/21/find-fastjson-jndi-gadget-by-codeql-tainttracking/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="yxxx">
@@ -247,7 +247,7 @@
       <meta itemprop="name" content="yxxx's blog">
     </span>
       <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">Learn CodeQL for Java by workshop
+        <h1 class="post-title" itemprop="name headline">CodeQL 污点分析寻找fastjson jndi链
 
           
         </h1>
@@ -263,11 +263,19 @@
                 
               
 
-              <time title="Created: 2020-05-21 18:41:00 / Modified: 18:42:04" itemprop="dateCreated datePublished" datetime="2020-05-21T18:41:00+08:00">2020-05-21</time>
+              <time title="Created: 2020-05-21 18:41:00" itemprop="dateCreated datePublished" datetime="2020-05-21T18:41:00+08:00">2020-05-21</time>
             </span>
           
             
 
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-06 21:30:36" itemprop="dateModified" datetime="2020-06-06T21:30:36+08:00">2020-06-06</time>
+              </span>
             
           
             <span class="post-meta-item">
@@ -473,8 +481,8 @@
           <div class="post-nav">
             <div class="post-nav-next post-nav-item">
               
-                <a href="/2020/05/20/01knapsack-problem/" rel="next" title="01knapsack-problem">
-                  <i class="fa fa-chevron-left"></i> 01knapsack-problem
+                <a href="/2020/05/20/01knapsack-problem/" rel="next" title="01背包问题四类解法">
+                  <i class="fa fa-chevron-left"></i> 01背包问题四类解法
                 </a>
               
             </div>
@@ -483,7 +491,7 @@
 
             <div class="post-nav-prev post-nav-item">
               
-                <a href="/2020/06/04/rctf_2020_swoole_writeup/" rel="prev" title="rctf-2020-swoole-writeup">
+                <a href="/2020/06/04/rctf-2020-swoole-writeup/" rel="prev" title="rctf-2020-swoole-writeup">
                   rctf-2020-swoole-writeup <i class="fa fa-chevron-right"></i>
                 </a>
               

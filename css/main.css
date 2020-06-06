@@ -1328,7 +1328,7 @@ pre .javascript .function {
 }
 .posts-collapse .post-meta {
   font-size: 0.75em;
-  left: 20px;
+  left: 9px;
   position: absolute;
   top: 5px;
 }
@@ -1719,7 +1719,7 @@ article:last-child .post-eof {
 }
 .links-of-author a::before,
 .links-of-author span.exturl::before {
-  background: #217aad;
+  background: #4e5514;
   border-radius: 50%;
   content: ' ';
   display: inline-block;
