@@ -55,22 +55,22 @@
   };
 </script>
 
-  <meta name="description" content="ezdotso题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    swi">
+  <meta name="description" content="题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    switch($ac">
 <meta name="keywords" content="php,writeup,race-condition">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ezdotso-by-race-condition-writeup">
-<meta property="og:url" content="https://blog.sometimenaive.com/2018/12/05/ezdotso_writeup_race_condition/index.html">
+<meta property="og:title" content="ezdotso writeup 通过临时文件条件竞争">
+<meta property="og:url" content="https://blog.sometimenaive.com/2018/12/05/ezdotso-by-race-condition-writeup/index.html">
 <meta property="og:site_name" content="yxxx&#39;s blog">
-<meta property="og:description" content="ezdotso题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    swi">
+<meta property="og:description" content="题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    switch($ac">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/4/image-20181201093310195-3627990.png">
 <meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/4/image-20181201093534582-3628134.png">
-<meta property="og:updated_time" content="2020-05-21T10:43:17.299Z">
+<meta property="og:updated_time" content="2020-06-06T13:32:36.343Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ezdotso-by-race-condition-writeup">
-<meta name="twitter:description" content="ezdotso题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    swi">
+<meta name="twitter:title" content="ezdotso writeup 通过临时文件条件竞争">
+<meta name="twitter:description" content="题目给了一个源码和一个so文件源码如下（稍微加了一点输出 12345678910111213141516171819202122232425262728293031323334353637383940&amp;lt;?php$param = array();parse_str($_SERVER[&apos;QUERY_STRING&apos;]);if (isset($action))&amp;#123;    switch($ac">
 <meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2020/4/image-20181201093310195-3627990.png">
-  <link rel="canonical" href="https://blog.sometimenaive.com/2018/12/05/ezdotso_writeup_race_condition/">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2018/12/05/ezdotso-by-race-condition-writeup/">
 
 
 <script id="page-configurations">
@@ -84,7 +84,7 @@
   };
 </script>
 
-  <title>ezdotso-by-race-condition-writeup | yxxx's blog</title>
+  <title>ezdotso writeup 通过临时文件条件竞争 | yxxx's blog</title>
   
 
 
@@ -221,7 +221,7 @@
   
   
   <div class="post-block post">
-    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2018/12/05/ezdotso_writeup_race_condition/">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2018/12/05/ezdotso-by-race-condition-writeup/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="yxxx">
@@ -233,7 +233,7 @@
       <meta itemprop="name" content="yxxx's blog">
     </span>
       <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">ezdotso-by-race-condition-writeup
+        <h1 class="post-title" itemprop="name headline">ezdotso writeup 通过临时文件条件竞争
 
           
         </h1>
@@ -260,7 +260,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-21 18:43:17" itemprop="dateModified" datetime="2020-05-21T18:43:17+08:00">2020-05-21</time>
+                <time title="Modified: 2020-06-06 21:32:36" itemprop="dateModified" datetime="2020-06-06T21:32:36+08:00">2020-06-06</time>
               </span>
             
           
@@ -289,7 +289,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="ezdotso"><a href="#ezdotso" class="headerlink" title="ezdotso"></a>ezdotso</h1><p>题目给了一个源码和一个so文件<br>源码如下（稍微加了一点输出</p>
+        <p>题目给了一个源码和一个so文件<br>源码如下（稍微加了一点输出</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">$param = <span class="keyword">array</span>();</span><br><span class="line">parse_str($_SERVER[<span class="string">'QUERY_STRING'</span>]);</span><br><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($action))&#123;</span><br><span class="line">    <span class="keyword">switch</span>($action)&#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">"php_info"</span>:</span><br><span class="line">        <span class="keyword">echo</span> call_user_func_array(<span class="string">"php_info"</span>,$param);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> <span class="string">"cmd"</span>:</span><br><span class="line">        <span class="keyword">if</span>(<span class="keyword">isset</span>($cmd))&#123;</span><br><span class="line">            <span class="keyword">if</span>(is_string($cmd))&#123;</span><br><span class="line">                <span class="keyword">if</span> (strlen($cmd)&gt;<span class="number">9</span>)&#123;</span><br><span class="line">                    <span class="keyword">die</span>();</span><br><span class="line">                &#125;</span><br><span class="line">                $pat1 = <span class="string">"/[^0-9a-zA-Z \/\*]/"</span>;</span><br><span class="line">                $count1 = preg_match($pat1, $cmd);</span><br><span class="line">                <span class="keyword">echo</span> $count1;</span><br><span class="line">                <span class="keyword">echo</span> <span class="string">"&lt;br&gt;"</span>;</span><br><span class="line">                <span class="keyword">if</span> ($count1&gt;<span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">die</span>(<span class="string">"1111"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                $pat2 = <span class="string">"/^[a-zA-Z]+ [0-9a-zA-Z\/\*]+$/"</span>;</span><br><span class="line">                $count2 = preg_match($pat2, $cmd);</span><br><span class="line">                <span class="keyword">echo</span> $count2;</span><br><span class="line">                <span class="keyword">echo</span> <span class="string">"&lt;br&gt;"</span>;</span><br><span class="line">                <span class="keyword">if</span> ($count2==<span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">die</span>(<span class="string">"2222"</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                $c = <span class="string">"busybox "</span>.$cmd;</span><br><span class="line">                system($c);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">        <span class="keyword">echo</span> call_user_func_array(<span class="string">"hello"</span>,$param);</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">    show_source(<span class="keyword">__FILE__</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>在分析代码之前解两个问题</p>
 <ul>
@@ -414,8 +414,6 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ezdotso"><span class="nav-number">1.</span> <span class="nav-text">ezdotso</span></a></li></ol></div>
-        
       </div>
       <!--/noindex-->
 
