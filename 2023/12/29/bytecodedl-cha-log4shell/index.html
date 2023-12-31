@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="TL;DR本文介绍了尝试使用ByteCodeDL、ByteCodeDL-PathFinder、ByteCodeDL-Neo4j-IDEA-Plugin 这些工具去复现log4shell漏洞的挖掘过程。 本文会尝试解决下面几个问题：  节点过多，查不出路径怎么办？ 查到路径之后，如何排查路径的正确性？  Challenges and Frustrations in ByteCodeDL目前ByteC">
+<meta name="keywords" content="java,bytecodedl,static-analysis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ByteCodeDL能找到log4shell(CVE-2021-44228)漏洞吗">
+<meta property="og:url" content="https://blog.sometimenaive.com/2023/12/29/bytecodedl-cha-log4shell/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="TL;DR本文介绍了尝试使用ByteCodeDL、ByteCodeDL-PathFinder、ByteCodeDL-Neo4j-IDEA-Plugin 这些工具去复现log4shell漏洞的挖掘过程。 本文会尝试解决下面几个问题：  节点过多，查不出路径怎么办？ 查到路径之后，如何排查路径的正确性？  Challenges and Frustrations in ByteCodeDL目前ByteC">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%205.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%206.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%207.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%208.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%209.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2010.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2011.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2012.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2013.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2014.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2015.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2016.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2017.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2018.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2019.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2020.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2021.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2022.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2023.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2024.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2026.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2027.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2028.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2029.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2030.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2031.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2032.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2033.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2023/12/bytecodedl-cha-log4shell.gif">
+<meta property="og:updated_time" content="2023-12-31T12:47:14.833Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ByteCodeDL能找到log4shell(CVE-2021-44228)漏洞吗">
+<meta name="twitter:description" content="TL;DR本文介绍了尝试使用ByteCodeDL、ByteCodeDL-PathFinder、ByteCodeDL-Neo4j-IDEA-Plugin 这些工具去复现log4shell漏洞的挖掘过程。 本文会尝试解决下面几个问题：  节点过多，查不出路径怎么办？ 查到路径之后，如何排查路径的正确性？  Challenges and Frustrations in ByteCodeDL目前ByteC">
+<meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2023/12/Untitled.png.webp">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2023/12/29/bytecodedl-cha-log4shell/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>ByteCodeDL能找到log4shell(CVE-2021-44228)漏洞吗 | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-recommend">
+      
+    
+
+    <a href="/recommend" rel="section"><i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br>recommend</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2023/12/29/bytecodedl-cha-log4shell/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">ByteCodeDL能找到log4shell(CVE-2021-44228)漏洞吗
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2023-12-29 00:00:00" itemprop="dateCreated datePublished" datetime="2023-12-29T00:00:00+00:00">2023-12-29</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-12-31 12:47:14" itemprop="dateModified" datetime="2023-12-31T12:47:14+00:00">2023-12-31</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/sec/" itemprop="url" rel="index"><span itemprop="name">sec</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="TL-DR"><a href="#TL-DR" class="headerlink" title="TL;DR"></a>TL;DR</h2><p>本文介绍了尝试使用<a href="https://github.com/BytecodeDL/ByteCodeDL" target="_blank" rel="noopener">ByteCodeDL</a>、<a href="https://github.com/BytecodeDL/bytecodedl-pathfinder-neo4j-procedure" target="_blank" rel="noopener">ByteCodeDL-PathFinder</a>、<a href="https://github.com/BytecodeDL/graphdb-intellij-plugin" target="_blank" rel="noopener">ByteCodeDL-Neo4j-IDEA-Plugin</a> 这些工具去复现log4shell漏洞的挖掘过程。</p>
+<p>本文会尝试解决下面几个问题：</p>
+<ol>
+<li>节点过多，查不出路径怎么办？</li>
+<li>查到路径之后，如何排查路径的正确性？</li>
+</ol>
+<h2 id="Challenges-and-Frustrations-in-ByteCodeDL"><a href="#Challenges-and-Frustrations-in-ByteCodeDL" class="headerlink" title="Challenges and Frustrations in ByteCodeDL"></a>Challenges and Frustrations in ByteCodeDL</h2><p>目前ByteCodeDL主要有以下问题，导致ByteCodeDL没有被用起来</p>
+<ol>
+<li>Datalog上手难度较高，大多数人不适应声明式编程语言</li>
+<li>CHA生成的调用图，边过多，存在环，导致先前直接用apoc.simpleAllPaths 查询非常慢，而且路径一长就查不出来</li>
+<li>查出来的路径如果想验证其正确性也很麻烦</li>
+</ol>
+<p>我之前尝试使用ByteCodeDL复现log4shell的时候，遇到了痛点2和痛点3，中间也走了一些弯路，比如实现一个simple-cha方法，可以减少边和环的出现但是验证起来还是非常麻烦。魔改了neo4j-browser，增加了删除按钮等功能，虽然能在一定程度上改善上面的痛点，但是实际用起来还是很痛。</p>
+<p>痛并思痛之后，有了现在的解决方案。</p>
+<ol>
+<li>写了neo4j自定义的procedure用于路径查询，为了性能考虑一次只返回一条路径，为了查询到更长的链路实现了一个双向查询的功能。</li>
+<li>魔改neo4j idea插件，在idea中显示neo4j的查询结果，将点和边绑定到代码跳转的事件，点击点会跳转到对应的声明方法，点击边会跳转到对应的调用点。</li>
+<li>在排查调用图是否正确时，重点排查两类情况<ol>
+<li>多态等导致的callee解析的不对<ol>
+<li>针对这种情况给边增加了仅保留正确callee的按钮，把其他解析错误的边删掉</li>
+</ol>
+</li>
+<li>条件语句等导致的不会走到callee对应的调用点<ol>
+<li>针对这种情况给边增加了全部删除该调用点的按钮</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<p>自己体验下来，排查的过程确实没有之前那么痛了。</p>
+<h2 id="Cha-Log4Shell"><a href="#Cha-Log4Shell" class="headerlink" title="Cha-Log4Shell"></a>Cha-Log4Shell</h2><p>下面展示如何利用上面那套组合拳，复现挖掘log4shell。</p>
+<p>首先搭建一个log4shell的环境，然后编译，编译产物用于生成fact，后面也会用这个环境进行调试。</p>
+<p>使用<code>git clone https://github.com/BytecodeDL/ByteCodeDL.git -b cha-log4shell</code>将cha-log4shell分支clone到本地。</p>
+<p>执行<code>cd ByteCodeDL</code> 切换到ByteCodeDL目录，通过<code>docker-compose up -d</code> 启动docker。</p>
+<p>上面的命令会创建两个容器</p>
+<ul>
+<li>bytecodedl_neo_1<ul>
+<li>neo4j server + bytecodedl-pathfinder-neo4j-procedure</li>
+</ul>
+</li>
+<li>bytecodedl_bytecodedl_1<ul>
+<li>souffle + soot-fact-generator</li>
+</ul>
+</li>
+</ul>
+<p>通过执行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar soot-fact-generator.jar -i log4shell.jar  -l /usr/lib/jvm/java-<span class="number">8</span>-oracle/jre/lib/rt.jar --generate-jimple --allow-phantom --full -d log4j</span><br></pre></td></tr></table></figure>
+<p>生成fact</p>
+<p>然后执行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">souffle -F /root/log4j -D output example/cha-log4shell.dl -j <span class="number">8</span></span><br></pre></td></tr></table></figure>
+<p>构建CHA调用图</p>
+<p>cha-log4shell.dl 内容也非常短，就定义了source，sink以及bancaller</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">#define MAXSTEP 33</span><br><span class="line">#define CHAO 1</span><br><span class="line"></span><br><span class="line">#include "../logic/cha.dl"</span><br><span class="line"></span><br><span class="line">BanCaller(method) :-</span><br><span class="line">    MethodInfo(method, _, _, <span class="class"><span class="keyword">class</span>, <span class="title">_</span>, <span class="title">_</span>, <span class="title">_</span>),</span></span><br><span class="line">    !contains("org.apache.logging.log4j", class).</span><br><span class="line"></span><br><span class="line">SinkDesc(<span class="string">"lookup"</span>, <span class="string">"javax.naming.Context"</span>).</span><br><span class="line"></span><br><span class="line"><span class="comment">// init entrypoint </span></span><br><span class="line">EntryPoint(simplename, descriptor, class) :-</span><br><span class="line">    MethodInfo(_, simplename, _, <span class="class"><span class="keyword">class</span>, <span class="title">_</span>, <span class="title">descriptor</span>, <span class="title">_</span>),</span></span><br><span class="line"><span class="class">    <span class="title">simplename</span> </span>= <span class="string">"error"</span>,</span><br><span class="line">    <span class="class"><span class="keyword">class</span> </span>= <span class="string">"org.apache.logging.log4j.spi.AbstractLogger"</span>,</span><br><span class="line">    descriptor = <span class="string">"(Ljava/lang/String;)V"</span>.</span><br></pre></td></tr></table></figure>
+<p>上面的分析过程大概不到5s</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">time souffle -F /root/log4j -D output example/cha-log4shell.dl -j <span class="number">8</span> </span><br><span class="line">souffle -F /root/log4j -D output example/cha-log4shell.dl -j <span class="number">8</span>  <span class="number">9.91</span>s user <span class="number">0.21</span>s system <span class="number">212</span>% cpu <span class="number">4.760</span> total</span><br></pre></td></tr></table></figure>
+<p>再执行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bash importOuput2Neo4j.sh neoImportCall.sh cha-log4shell</span><br></pre></td></tr></table></figure>
+<p>将调用图分析的结果导入到neo4j的数据库</p>
+<p>导入过程大概花了不到2s</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">IMPORT DONE in <span class="number">1</span>s <span class="number">163</span>ms. </span><br><span class="line">Imported:</span><br><span class="line">  <span class="number">1190</span> nodes</span><br><span class="line">  <span class="number">3358</span> relationships</span><br><span class="line">  <span class="number">1190</span> properties</span><br></pre></td></tr></table></figure>
+<p>可以在终端输出中看到实际的数据库名称</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled.png.webp" alt="Untitled"></p>
+<p>然后在<strong>最新版</strong>的IDEA中安装插件<a href="https://github.com/BytecodeDL/graphdb-intellij-plugin/releases/tag/v1.0.0" target="_blank" rel="noopener">https://github.com/BytecodeDL/graphdb-intellij-plugin/releases/tag/v1.0.0</a></p>
+<p>安装成功后填写对应的数据库地址和数据库名称</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%205.png.webp" alt="Untitled"></p>
+<p>测试链接没问题后点击OK保存，然后双击数据库</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%206.png.webp" alt="Untitled"></p>
+<p>进入到一个可以执行cypher语句的tag页面</p>
+<p>然后填入cypher语句</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">match (source:entry)</span><br><span class="line">match (target:sink) where target.method=<span class="string">"&lt;javax.naming.InitialContext: java.lang.Object lookup(java.lang.String)&gt;"</span></span><br><span class="line">call bytecodedl.findOnePath(source, target, <span class="number">30</span>) yield path <span class="keyword">return</span> path</span><br></pre></td></tr></table></figure>
+<p>bytecodedl.findOnePath(source, target, 30)表示从source出发在30跳之内找到一条到达target的路径并返回</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">match (start:entry)</span><br><span class="line">match (end:sink) where end.method=<span class="string">"&lt;javax.naming.InitialContext: java.lang.Object lookup(java.lang.String)&gt;"</span></span><br><span class="line">call bytecodedl.biFindOnePath(start, end, <span class="number">40</span>) yield path <span class="keyword">return</span> path;</span><br></pre></td></tr></table></figure>
+<p>bytecodedl.biFindOnePath(start, end, 40) 也是找到一条start到end且长度小于40的路径。</p>
+<p>bytecodedl.findOnePath 和 bytecodedl.biFindOnePath 不同点有</p>
+<ol>
+<li>唯一性不同<ol>
+<li>findOnePath的uniqueness是NODE_GLOBAL，也就是路径中遍历过的节点不会在后续遍历中出现</li>
+<li>biFindOnePath的uniqueness是RELATIONSHIP_GLOBAL，也就是路径中遍历过的边不会在后续遍历中出现，但是可能会出现环的情况</li>
+</ol>
+</li>
+<li>遍历方向不同<ol>
+<li>findOnePath是单向遍历，宽度优先遍历，遇到end就会停止</li>
+<li>biFindOnePath是双向深度优先遍历，就是从source和end出发开始遍历，中间相遇的时候会停止</li>
+</ol>
+</li>
+</ol>
+<p>点击执行按钮可以获得查询结果。我们先使用findOnePath</p>
+<p>1006ms 可以得到执行结果，结果如下</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%207.png.webp" alt="Untitled"></p>
+<p>从图中可以发现存在三种颜色，绿色的为source 黄色的为sink，紫色的为中间的调用方法。</p>
+<p>先从source出发进行排查该路径是不是正确的。</p>
+<p>点击节点会跳转到对应的方法声明处，同时右边会显示该节点的详细信息</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%208.png.webp" alt="Untitled"></p>
+<p>点击边会根据边的insn跳转到对应调用点，右下角也会显示边的详细信息</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%209.png.webp" alt="Untitled"></p>
+<p>再继续向下排查，会发现分叉了，不是说好的只返回一条边，为什么这里会分叉了呢？</p>
+<p>这其实是故意设置的，在找到一条路径后，会从start开始遍历边，找到第一个不确定实际calle的边，然后把所有可能的callee一并返回，让安全研究人员重点排查该点的实际解析情况。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2010.png.webp" alt="Untitled"></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2011.png.webp" alt="Untitled"></p>
+<p>发现在调用点<code>this.isEnabled(level, marker, message, throwable)</code> 存在三个不同的解析，分别是</p>
+<ul>
+<li>Logger#isEnabled</li>
+<li>ExtendedLoggerWrapper#isEnabled</li>
+<li>StatusLogger#isEnabled</li>
+</ul>
+<p>所以我们需要人工判断实际情况会调用哪个函数？怎么判断呢？最简单的还是下个断点调试。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2012.png.webp" alt="Untitled"></p>
+<p>根据调试结果，这里应该实际被解析为Logger#isEnabled，在确定正确的dispatch之后就可以把其他错误的dispatch结果删掉。</p>
+<p>选中要保留的边，然后右击右边的relationship第一行，选择执行Only Leave this invocation，就会只保留这个边，把其他边删掉。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2013.png.webp" alt="Untitled"></p>
+<p>实际执行的语句是</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Executing query: </span><br><span class="line">MATCH ()-[n:Call]-&gt;() <span class="function">WHERE <span class="title">elementId</span><span class="params">(n)</span> &lt;&gt; $id and n.insn </span>= $insn SET n.is_deleted=<span class="number">1</span> RETURN n</span><br><span class="line">With parameters: </span><br><span class="line">id: <span class="number">5</span>:<span class="number">50</span>cd803c-<span class="number">5303</span>-<span class="number">4109</span>-<span class="number">8234</span>-<span class="number">501</span>b876ebdf5:<span class="number">654</span></span><br><span class="line">insn: &lt;org.apache.logging.log4j.spi.AbstractLogger: <span class="function"><span class="keyword">void</span> <span class="title">logIfEnabled</span><span class="params">(java.lang.String,org.apache.logging.log4j.Level,org.apache.logging.log4j.Marker,java.lang.String,java.lang.Throwable)</span>&gt;/org.apache.logging.log4j.spi.AbstractLogger.isEnabled/0</span></span><br><span class="line"><span class="function">Query executed in 959ms. Query type: READ_WRITE.</span></span><br></pre></td></tr></table></figure>
+<p>为了防止删错了，这里用了软删除，设置了边的is_deleted属性为1</p>
+<p>下一步应该怎么办呢？</p>
+<p>一种选择是再执行一遍刚才的cypher</p>
+<p>还有一种选择是将当前排查过的点作为起点进行查询</p>
+<p>先尝试第一种方式，重新执行后</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2014.png.webp" alt="Untitled"></p>
+<p>又遇到了分叉，接着通过调试判断真正被解析的函数。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2015.png.webp" alt="Untitled"></p>
+<p>从调试结果可以发现filter为null，实际不会调用到filter.filter这个调用点，这时候我们就需要通过Delete all invocation 删除实际不存在的调用，这个删除也是对边设置了is_deleted=1</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2016.png.webp" alt="Untitled"></p>
+<p>接着查询</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2017.png.webp" alt="Untitled"></p>
+<p>接着通过debug进行判断</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2018.png.webp" alt="Untitled"></p>
+<p>删除其他错的边，重新查询，重复操作几次之后，会得到下面的图</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2019.png.webp" alt="Untitled"></p>
+<p>通过调试我们可以判断前面的边都是正确的，这时候可以换一种策略，把当前的已经排查过的点当成起点，进行查询。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2020.png.webp" alt="Untitled"></p>
+<p>执行下面的cypher语句</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">match (start:method) <span class="function">where <span class="title">elementId</span><span class="params">(start)</span></span>=<span class="string">"4:ee01406d-9aeb-4db7-8d8a-f860e0ae8de2:489"</span></span><br><span class="line">match (target:sink) where target.method=<span class="string">"&lt;javax.naming.InitialContext: java.lang.Object lookup(java.lang.String)&gt;"</span></span><br><span class="line">call bytecodedl.findOnePath(start, target, <span class="number">30</span>) yield path <span class="keyword">return</span> path</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2021.png.webp" alt="Untitled"></p>
+<p>更换起点这种方式有两种好处</p>
+<ol>
+<li>可以保证排查的连续性，如果还是直接从source开始查，不一定查到的还是刚才的路径</li>
+<li>去掉前面的路径之后，可以排查更深的路径</li>
+</ol>
+<p>接着探索会遇到</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2022.png.webp" alt="Untitled"></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2023.png.webp" alt="Untitled"></p>
+<p>会发现appender的实际类型是ConsoleAppender，但是排查节点的时候下一个节点里面并没有ConsoleAppender。这时候最简单的判断方式就是断点再执行一步跟进这个方法。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2024.png.webp" alt="Untitled"></p>
+<p>这是因为ConsoleAppender继承了AbstractOuputStreamAppender，但是没有重载append方法。</p>
+<p>继续排查会遇到这种情况，同一个调用点确实可能会被解析成多个callee</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2026.png.webp" alt="Untitled"></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2027.png.webp" alt="Untitled"></p>
+<p>通过在调试evaluation窗口执行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; list = <span class="keyword">new</span> ArrayList();</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; formatters.length; j++) &#123;</span><br><span class="line">    list.add(formatters[j].getConverter().getClass().getSimpleName());</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> list;</span><br></pre></td></tr></table></figure>
+<p>可以得到所有可能的converter的类型</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2028.png.webp" alt="Untitled"></p>
+<p>刚好是有MessagePatternConverter</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2029.png.webp" alt="Untitled"></p>
+<p>通过分析这段代码应该就能构造成payload ${dddd}</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2030.png.webp" alt="Untitled"></p>
+<p>然后开始从MessagePatternConverter开始排查，会遇到下面这个分叉</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2031.png.webp" alt="Untitled"></p>
+<p>通过调试可以确定resolver类型为Interpolator</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2032.png.webp" alt="Untitled"></p>
+<p>继续进行调试，会走到下面这段代码，再结合这部分代码，就可以构造出payload <code>${jndi:xxx}</code> ，至此可以得出结论，ByteCodeDL在马后炮的情况下是可以发现log4shell漏洞的。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/Untitled%2033.png.webp" alt="Untitled"></p>
+<p>最后附上通过</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">match (start:entry)</span><br><span class="line">match (end:sink) where end.method=<span class="string">"&lt;javax.naming.InitialContext: java.lang.Object lookup(java.lang.String)&gt;"</span></span><br><span class="line">call bytecodedl.biFindOnePath(start, end, <span class="number">40</span>) yield path <span class="keyword">return</span> path;</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.sometimenaive.com/blog-img/2023/12/bytecodedl-cha-log4shell.gif" alt="Untitled"></p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>从上面可以看出这套组合拳的核心功能</p>
+<ol>
+<li>速度较快CHA 调用图分析以及导入、查询功能</li>
+<li>将点和边和代码跳转进行绑定，更方便安全研究人员排查路径的准确</li>
+<li>通过删除不存在/错误的边，更换起点的方式可以加快排查过程</li>
+</ol>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><ul>
+<li><a href="https://github.com/BytecodeDL/ByteCodeDL" target="_blank" rel="noopener">https://github.com/BytecodeDL/ByteCodeDL</a></li>
+<li><a href="https://github.com/BytecodeDL/bytecodedl-pathfinder-neo4j-procedure" target="_blank" rel="noopener">https://github.com/BytecodeDL/bytecodedl-pathfinder-neo4j-procedure</a></li>
+<li><a href="https://github.com/BytecodeDL/graphdb-intellij-plugin" target="_blank" rel="noopener">https://github.com/BytecodeDL/graphdb-intellij-plugin</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/java/" rel="tag"># java</a>
+            
+              <a href="/tags/bytecodedl/" rel="tag"># bytecodedl</a>
+            
+              <a href="/tags/static-analysis/" rel="tag"># static-analysis</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2022/05/07/can-codeql-find-log4shell/" rel="next" title="CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？">
+                  <i class="fa fa-chevron-left"></i> CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#TL-DR"><span class="nav-number">1.</span> <span class="nav-text">TL;DR</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Challenges-and-Frustrations-in-ByteCodeDL"><span class="nav-number">2.</span> <span class="nav-text">Challenges and Frustrations in ByteCodeDL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cha-Log4Shell"><span class="nav-number">3.</span> <span class="nav-text">Cha-Log4Shell</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">4.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

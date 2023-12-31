@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="本文首发于跳跳糖 Introduction本文主要是根据ptaint这篇论文的思想：将指针分析和污点分析统一起来进行分析，实现ByteCodeDL的污点分析功能，在阅读本文之前建议先学习下面三份资料  https://yanniss.github.io/ptaint-oopsla17-prelim.pdf https://www.youtube.com/watch?v=IA08d-kiCy8">
+<meta name="keywords" content="java,bytecodedl,static-analysis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ByteCodeDL原理篇之手把手教你实现污点分析">
+<meta property="og:url" content="https://blog.sometimenaive.com/2022/05/06/bytecodedl-ptaint-implement/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="本文首发于跳跳糖 Introduction本文主要是根据ptaint这篇论文的思想：将指针分析和污点分析统一起来进行分析，实现ByteCodeDL的污点分析功能，在阅读本文之前建议先学习下面三份资料  https://yanniss.github.io/ptaint-oopsla17-prelim.pdf https://www.youtube.com/watch?v=IA08d-kiCy8">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2023-12-31T12:47:14.833Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ByteCodeDL原理篇之手把手教你实现污点分析">
+<meta name="twitter:description" content="本文首发于跳跳糖 Introduction本文主要是根据ptaint这篇论文的思想：将指针分析和污点分析统一起来进行分析，实现ByteCodeDL的污点分析功能，在阅读本文之前建议先学习下面三份资料  https://yanniss.github.io/ptaint-oopsla17-prelim.pdf https://www.youtube.com/watch?v=IA08d-kiCy8">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2022/05/06/bytecodedl-ptaint-implement/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>ByteCodeDL原理篇之手把手教你实现污点分析 | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-recommend">
+      
+    
+
+    <a href="/recommend" rel="section"><i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br>recommend</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2022/05/06/bytecodedl-ptaint-implement/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">ByteCodeDL原理篇之手把手教你实现污点分析
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2022-05-06 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-06T00:00:00+00:00">2022-05-06</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-12-31 12:47:14" itemprop="dateModified" datetime="2023-12-31T12:47:14+00:00">2023-12-31</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/sec/" itemprop="url" rel="index"><span itemprop="name">sec</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文首发于<a href="https://tttang.com/archive/1541/" target="_blank" rel="noopener">跳跳糖</a></p>
+<h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>本文主要是根据<a href="https://yanniss.github.io/ptaint-oopsla17-prelim.pdf" target="_blank" rel="noopener">ptaint</a>这篇论文的思想：将指针分析和污点分析统一起来进行分析，实现ByteCodeDL的污点分析功能，在阅读本文之前建议先学习下面三份资料</p>
+<ul>
+<li><a href="https://yanniss.github.io/ptaint-oopsla17-prelim.pdf" target="_blank" rel="noopener">https://yanniss.github.io/ptaint-oopsla17-prelim.pdf</a><ul>
+<li><a href="https://www.youtube.com/watch?v=IA08d-kiCy8" target="_blank" rel="noopener">https://www.youtube.com/watch?v=IA08d-kiCy8</a></li>
+</ul>
+</li>
+<li><a href="https://pascal-group.bitbucket.io/lectures/Security.pdf" target="_blank" rel="noopener">https://pascal-group.bitbucket.io/lectures/Security.pdf</a></li>
+</ul>
+<p>污点分析：which sources can reach which sinks</p>
+<p>指针分析：which object sources can reach which variables</p>
+<p>指针分析是计算指针在运行过程中可能指向哪些对象，也可以理解为创建之后的对象，会传播到哪些指针</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">A a = <span class="keyword">new</span> A(<span class="string">"foo"</span>); <span class="comment">// object created</span></span><br><span class="line"><span class="keyword">if</span> (*)</span><br><span class="line">   aa = a;          <span class="comment">// flows locally</span></span><br><span class="line">B b = foo(a);       <span class="comment">// flows in/out via stack</span></span><br><span class="line">b.parent = a;       <span class="comment">// stored/loaded on heap</span></span><br></pre></td></tr></table></figure>
+<p>污点分析是计算sink函数的参数是否是污点，也可以理解为污点源会传播到哪些指针</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">String a = source.readLine(); <span class="comment">// taint source</span></span><br><span class="line"><span class="keyword">if</span> (*)</span><br><span class="line">   aa = a;          <span class="comment">// flows locally</span></span><br><span class="line">B b = foo(a);       <span class="comment">// flows in/out via stack</span></span><br><span class="line">b.parent = a;       <span class="comment">// stored/loaded on heap</span></span><br></pre></td></tr></table></figure>
+<p>两者可以统一成，值在指针之间的传播，也就是在PFG(Pointer Flow Graph)中传播</p>
+<p>污点分析和指针分析相比还多了一些东西，比如污点转移，以及污点消除(净化函数)</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">String a = source.readLine(); <span class="comment">// taint source</span></span><br><span class="line"><span class="keyword">if</span> (*)</span><br><span class="line">   aa = a;          <span class="comment">// flows locally</span></span><br><span class="line">B b = foo(a);       <span class="comment">// flows in/out via stack</span></span><br><span class="line">b.parent = a;       <span class="comment">// stored/loaded on heap</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">byte</span>[] aAsbytes = a.getBytes(); <span class="comment">// transfer</span></span><br><span class="line"></span><br><span class="line">String aSafe = URLEncoder.encode(a, <span class="string">"UTF-8"</span>); <span class="comment">// sanitize</span></span><br></pre></td></tr></table></figure>
+<p>Ptaint论文中将污点视为独立的对象，而不是给传统的对象打上污点标记，会创建新的污点对象，和传统的对象分开各自独立沿着相同的PFG传播</p>
+<p>按照论文中的给的示例规则得到的实现</p>
+<p><a href="https://github.com/BytecodeDL/ByteCodeDL/blob/ptaint/logic/ptaint.dl" target="_blank" rel="noopener">ptaint.dl</a> </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br></pre></td><td class="code"><pre><span class="line">.comp PTaint&#123;</span><br><span class="line">    // 指针分析原有的relation</span><br><span class="line">    .decl VarPointsTo(heap:Heap, var:Var)</span><br><span class="line">    .decl InstanceFieldPointsTo(heap:Heap, baseHeap:Heap, field:Field)</span><br><span class="line">    .decl CallGraph(insn:Insn, caller:Method, callee:Method)</span><br><span class="line">    .decl Reachable(method:Method)</span><br><span class="line">    .decl InterProcAssign(from:Var, to:Var)</span><br><span class="line">		</span><br><span class="line">    // 污点分析相关的新relation</span><br><span class="line">    // 表示通过insn指令，创建的新的污点对象heap，包括污点源的生成，以及污点转移时的生成</span><br><span class="line">    .decl TaintHeap(insn:Insn, heap:Heap)</span><br><span class="line">    // 表示调用指令insn发生时，危险函数的参数指向了污点对象heap</span><br><span class="line">    .decl Leak(insn:Insn, heap:Heap)</span><br><span class="line">    // 表示source函数，其返回值表示污点源</span><br><span class="line">    .decl SourceMethod(method:Method)</span><br><span class="line">    // 表示sink函数，其第n个实际参数如果指向污点对象，则表示可能存在安全风险</span><br><span class="line">    .decl SinkMethod(method:Method, n:number)</span><br><span class="line">    // 表示sanitize函数，经过其处理的污点，将不再是污点，也就是说污点无法通过sanitize传播，是在实际参数向形式参数传播时阻断的</span><br><span class="line">    .decl SanitizeMethod(method:Method)</span><br><span class="line">    // 表示sanitize函数的形式参数</span><br><span class="line">    .decl SanitizeMethodParam(var:Var)</span><br><span class="line">    // 筛选出sanitize函数的形式参数</span><br><span class="line">    SanitizeMethodParam(var) :-</span><br><span class="line">        FormalParam(_, method, var),</span><br><span class="line">        SanitizeMethod(method).</span><br><span class="line">		</span><br><span class="line">    // 污点转移相关的</span><br><span class="line">    // base 是 污点 返回值也是污点</span><br><span class="line">    .decl BaseToRetTransfer(method:Method)</span><br><span class="line">    // 参数是污点返回也是污点</span><br><span class="line">    .decl ArgToRetTransfer(method:Method, n:number)</span><br><span class="line">    // 将上面两个合并成一个，或者将污点转移抽象成from变量污染了to变量</span><br><span class="line">    .decl IsTaintedFrom(insn:Insn, from:Var, to:Var)</span><br><span class="line">    // heap 对象 污染了 newHeap对象</span><br><span class="line">    .decl TransferTaint(heap:Heap, newHeap:Heap)</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    // new</span><br><span class="line">    VarPointsTo(heap, var) :-</span><br><span class="line">        Reachable(method),</span><br><span class="line">        AssignHeapAllocation(_, _, heap, var, method, _).</span><br><span class="line">    </span><br><span class="line">    // assign</span><br><span class="line">    VarPointsTo(heap, to) :- </span><br><span class="line">        Reachable(method),</span><br><span class="line">        VarPointsTo(heap, from),</span><br><span class="line">        AssignLocal(_, _, from, to, method).</span><br><span class="line">    </span><br><span class="line">    // load field</span><br><span class="line">    VarPointsTo(heap, to) :-</span><br><span class="line">        Reachable(method),</span><br><span class="line">        LoadInstanceField(_, _, to, base, field, method),</span><br><span class="line">        VarPointsTo(baseHeap, base),</span><br><span class="line">        InstanceFieldPointsTo(heap, baseHeap, field).</span><br><span class="line">    </span><br><span class="line">    // store field</span><br><span class="line">    InstanceFieldPointsTo(heap, baseHeap, field) :-</span><br><span class="line">        Reachable(method),</span><br><span class="line">        StoreInstanceField(_, _, from, base, field, method),</span><br><span class="line">        VarPointsTo(heap, from),</span><br><span class="line">        VarPointsTo(baseHeap, base).</span><br><span class="line">    </span><br><span class="line">    // virtual call</span><br><span class="line">    Reachable(callee),</span><br><span class="line">    CallGraph(insn, caller, callee) :- </span><br><span class="line">        Reachable(caller),</span><br><span class="line">        VirtualMethodInvocation(insn, _, method, base, caller),</span><br><span class="line">        VarPointsTo(baseHeap, base),</span><br><span class="line">        NormalHeap(baseHeap, class),</span><br><span class="line">        MethodInfo(method, simplename, _, _, _, descriptor, _),</span><br><span class="line">        Dispatch(simplename, descriptor, class, callee).</span><br><span class="line">    </span><br><span class="line">    // arg -&gt; param</span><br><span class="line">    InterProcAssign(arg, param) :-</span><br><span class="line">        CallGraph(insn, _, callee),</span><br><span class="line">        ActualParam(n, insn, arg),</span><br><span class="line">        FormalParam(n, callee, param).</span><br><span class="line">    </span><br><span class="line">    // var -&gt; return</span><br><span class="line">    InterProcAssign(var, return) :-</span><br><span class="line">        CallGraph(insn, _, callee),</span><br><span class="line">        Return(_, _, var, callee),</span><br><span class="line">        AssignReturnValue(insn, return).</span><br><span class="line"></span><br><span class="line">    // normal heap</span><br><span class="line">    // 正常对象正常传播</span><br><span class="line">    VarPointsTo(heap, to) :- </span><br><span class="line">        InterProcAssign(from, to),</span><br><span class="line">        VarPointsTo(heap, from),</span><br><span class="line">        // 比起指针分析多了个这个限制，用于限制heap为正常对象</span><br><span class="line">        NormalHeap(heap, _).</span><br><span class="line">    </span><br><span class="line">    // taint heap</span><br><span class="line">    // 阻断污点对象传播到净化函数的形式参数</span><br><span class="line">    VarPointsTo(heap, to) :- </span><br><span class="line">        InterProcAssign(from, to),</span><br><span class="line">        VarPointsTo(heap, from),</span><br><span class="line">        TaintHeap(_, heap),</span><br><span class="line">        !SanitizeMethodParam(to).</span><br><span class="line">    </span><br><span class="line">    // this</span><br><span class="line">    VarPointsTo(heap, this) :-</span><br><span class="line">        CallGraph(insn, _, callee),</span><br><span class="line">        VirtualMethodInvocation(insn, _, _, base, _),</span><br><span class="line">        VarPointsTo(heap, base),</span><br><span class="line">        ThisVar(callee, this).</span><br><span class="line">    </span><br><span class="line">    // 污点对象的生成</span><br><span class="line">    TaintHeap(insn, heap),</span><br><span class="line">    VarPointsTo(heap, to) :-</span><br><span class="line">        SourceMethod(callee),</span><br><span class="line">        CallGraph(insn, _, callee),</span><br><span class="line">        AssignReturnValue(insn, to),</span><br><span class="line">        heap = cat(&quot;NewTainted::&quot;, insn).</span><br><span class="line">    </span><br><span class="line">    // 判断sink函数的参数是否指向污点对象</span><br><span class="line">    Leak(insn, heap) :-</span><br><span class="line">        CallGraph(insn, _, callee),</span><br><span class="line">        SinkMethod(callee, n),</span><br><span class="line">        ActualParam(n, insn, arg),</span><br><span class="line">        VarPointsTo(heap, arg),</span><br><span class="line">        TaintHeap(_, heap).</span><br><span class="line">		</span><br><span class="line">    // base -&gt; ret</span><br><span class="line">    IsTaintedFrom(insn, base, ret) :-</span><br><span class="line">        CallGraph(insn, _, callee),</span><br><span class="line">        BaseToRetTransfer(callee),</span><br><span class="line">        VirtualMethodInvocation(insn, _, _, base, _),</span><br><span class="line">        AssignReturnValue(insn, ret).</span><br><span class="line">    // arg -&gt; ret</span><br><span class="line">    IsTaintedFrom(insn, arg, ret) :-</span><br><span class="line">        CallGraph(insn, _, callee),</span><br><span class="line">        ArgToRetTransfer(callee, n),</span><br><span class="line">        ActualParam(n, insn, arg),</span><br><span class="line">        AssignReturnValue(insn, ret).</span><br><span class="line">		</span><br><span class="line">    // 污点转移</span><br><span class="line">    // from 指向了污点对象heap</span><br><span class="line">    // 且from能污染to</span><br><span class="line">    // 那么to也是污点对象，也要指向一个污点对象</span><br><span class="line">    // 这里没有直接让to指向新创建的污点对象</span><br><span class="line">    // 而是先找到to指向的正常对象oldHeap，oldHeap第一个流向的指针var，然后让newHeap也流向指针var，即var指向newHeap</span><br><span class="line">    // 由于oldHeap流向var之后，通过PFG可以流到to，那么newHeap也能流到to，这样也把和var alias的指针一并污染了</span><br><span class="line">    TaintHeap(insn, newHeap),</span><br><span class="line">    TransferTaint(heap, newHeap),</span><br><span class="line">    VarPointsTo(newHeap, var) :- </span><br><span class="line">        IsTaintedFrom(insn, from, to),</span><br><span class="line">        VarPointsTo(heap, from),</span><br><span class="line">        TaintHeap(_, heap),</span><br><span class="line">        newHeap = cat(&quot;TransferTaint::&quot;, insn),</span><br><span class="line">        VarPointsTo(oldHeap, to),</span><br><span class="line">        AssignHeapAllocation(_, _, oldHeap, var, _, _).</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对应的使用规则：<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/ptaint/example/ptaint-example-1.dl" target="_blank" rel="noopener">ptaint-example-1.dl</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">#include &quot;inputDeclaration.dl&quot;</span><br><span class="line">#include &quot;utils.dl&quot;</span><br><span class="line">#include &quot;ptaint.dl&quot;</span><br><span class="line"></span><br><span class="line">.init ptaint = PTaint</span><br><span class="line"></span><br><span class="line">ptaint.Reachable(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void main(java.lang.String[])&gt;&quot;).</span><br><span class="line"></span><br><span class="line">ptaint.SourceMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Source()&gt;&quot;).</span><br><span class="line">ptaint.SinkMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void Sink(java.lang.String)&gt;&quot;, 0).</span><br><span class="line"></span><br><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;).</span><br><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.String toString()&gt;&quot;).</span><br><span class="line"></span><br><span class="line">ptaint.ArgToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;, 0).</span><br><span class="line"></span><br><span class="line">ptaint.SanitizeMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Sanitize(java.lang.String)&gt;&quot;).</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">.decl TaintVar(var:Var)</span><br><span class="line"></span><br><span class="line">TaintVar(var) :-</span><br><span class="line">    ptaint.VarPointsTo(heap, var),</span><br><span class="line">    ptaint.TaintHeap(_, heap).</span><br><span class="line"></span><br><span class="line">.output TaintVar</span><br><span class="line"></span><br><span class="line">.output ptaint.TaintHeap</span><br><span class="line">.output ptaint.TransferTaint</span><br><span class="line">.output ptaint.VarPointsTo</span><br></pre></td></tr></table></figure>
+<p>可以看到大部分的规则都是和指针分析一样的，那么能不能利用之前实现的<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/pt-noctx/logic/pt-noctx.dl" target="_blank" rel="noopener">pt-noctx.dl</a>呢？答案是可以的，但是有一处要稍微改一下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">// param</span><br><span class="line">VarPointsTo(heap, param) :- </span><br><span class="line">    CallGraph(insn, _, callee),</span><br><span class="line">    ActualParam(n, insn, arg),</span><br><span class="line">    FormalParam(n, callee, param),</span><br><span class="line">    VarPointsTo(heap, arg),</span><br><span class="line">    // 在实际参数向形式参数传播的时候，正常的对象可以任意传播，污点对象还需要考虑被sanitize阻断的问题</span><br><span class="line">    NormalHeap(heap, _).</span><br></pre></td></tr></table></figure>
+<p>更改后的<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/ptaint-upgrade/logic/pt-noctx.dl" target="_blank" rel="noopener">pt-noctx.dl</a></p>
+<p>更新后的<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/ptaint-upgrade/logic/ptaint.dl" target="_blank" rel="noopener">ptaint.dl</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">#include &quot;pt-noctx.dl&quot;</span><br><span class="line"></span><br><span class="line">.comp PTaint&#123;</span><br><span class="line">    // 实例上下文无关指针分析</span><br><span class="line">    .init cipt = ContextInsensitivePt</span><br><span class="line">		</span><br><span class="line">    // 定义污点分析相关的</span><br><span class="line">    .decl TaintHeap(insn:Insn, heap:Heap)</span><br><span class="line">    .decl SourceMethod(method:Method)</span><br><span class="line">    .decl SinkMethod(method:Method, n:number)</span><br><span class="line"></span><br><span class="line">    .decl SanitizeMethod(method:Method)</span><br><span class="line"></span><br><span class="line">    .decl BaseToRetTransfer(method:Method)</span><br><span class="line">    .decl ArgToRetTransfer(method:Method, n:number)</span><br><span class="line">    .decl IsTaintedFrom(insn:Insn, from:Var, to:Var)</span><br><span class="line">    .decl TransferTaint(heap:Heap, newHeap:Heap)</span><br><span class="line">    </span><br><span class="line">    // 阻止污点对象传播到sanitize函数的形式参数</span><br><span class="line">    // taint arg to param</span><br><span class="line">    cipt.VarPointsTo(heap, param) :- </span><br><span class="line">        cipt.CallGraph(insn, _, callee),</span><br><span class="line">        ActualParam(n, insn, arg),</span><br><span class="line">        FormalParam(n, callee, param),</span><br><span class="line">        cipt.VarPointsTo(heap, arg),</span><br><span class="line">        TaintHeap(_, heap),</span><br><span class="line">        !SanitizeMethod(callee).</span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    TaintHeap(insn, heap),</span><br><span class="line">    cipt.VarPointsTo(heap, to) :-</span><br><span class="line">        SourceMethod(callee),</span><br><span class="line">        cipt.CallGraph(insn, _, callee),</span><br><span class="line">        AssignReturnValue(insn, to),</span><br><span class="line">        heap = cat(&quot;NewTainted::&quot;, insn).</span><br><span class="line"></span><br><span class="line">    IsTaintedFrom(insn, base, ret) :-</span><br><span class="line">        cipt.CallGraph(insn, _, callee),</span><br><span class="line">        BaseToRetTransfer(callee),</span><br><span class="line">        VirtualMethodInvocation(insn, _, _, base, _),</span><br><span class="line">        AssignReturnValue(insn, ret).</span><br><span class="line">    </span><br><span class="line">    IsTaintedFrom(insn, arg, ret) :-</span><br><span class="line">        cipt.CallGraph(insn, _, callee),</span><br><span class="line">        ArgToRetTransfer(callee, n),</span><br><span class="line">        ActualParam(n, insn, arg),</span><br><span class="line">        AssignReturnValue(insn, ret).</span><br><span class="line"></span><br><span class="line">    TaintHeap(insn, newHeap),</span><br><span class="line">    TransferTaint(heap, newHeap),</span><br><span class="line">    cipt.VarPointsTo(newHeap, var) :- </span><br><span class="line">        IsTaintedFrom(insn, from, to),</span><br><span class="line">        cipt.VarPointsTo(heap, from),</span><br><span class="line">        TaintHeap(_, heap),</span><br><span class="line">        newHeap = cat(&quot;TransferTaint::&quot;, insn),</span><br><span class="line">        cipt.VarPointsTo(oldHeap, to),</span><br><span class="line">        AssignHeapAllocation(_, _, oldHeap, var, _, _).</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Example-1"><a href="#Example-1" class="headerlink" title="Example 1"></a>Example 1</h2><p>我们先分析Benchmark中的<a href="https://github.com/BytecodeDL/Benchmark/blob/main/src/main/java/com/bytecodedl/benchmark/demo/TaintDemo3.java" target="_blank" rel="noopener">TaintDemo3</a></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TaintDemo3</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        TaintDemo3 demo = <span class="keyword">new</span> TaintDemo3();</span><br><span class="line">        String name = demo.Source();</span><br><span class="line">        demo.test1(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test1</span><span class="params">(String name)</span></span>&#123;</span><br><span class="line">        String sql0= <span class="string">"select * from user where name='"</span> + name + <span class="string">"'"</span>;</span><br><span class="line">        String sql1 = sql0;</span><br><span class="line">        String sql = Sanitize(sql1);</span><br><span class="line">        Sink(sql);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Sink</span><span class="params">(String param)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">Sanitize</span><span class="params">(String param)</span></span>&#123;</span><br><span class="line">        String ret = param.replace(<span class="string">'\''</span>, <span class="string">'`'</span>);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">Source</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"tainted name"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">// 代码下载到本地</span><br><span class="line">git <span class="built_in">clone</span> git@github.com:BytecodeDL/Benchmark.git</span><br><span class="line">// 打包</span><br><span class="line">mvn clean package</span><br><span class="line">// 切换目录</span><br><span class="line"><span class="built_in">cd</span> target</span><br><span class="line">// 生成facts</span><br><span class="line">java8 -jar ~/code/soot-fact-generator/build/libs/soot-fact-generator.jar -i Benchmark-1.0-SNAPSHOT.jar --full -l /Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home/jre/lib/rt.jar -d tainttest --allow-phantom --generate-jimple</span><br><span class="line">// 切换目录</span><br><span class="line"><span class="built_in">cd</span> tainttest</span><br><span class="line">// 执行souffle</span><br><span class="line">souffle -I ~/code/ByteCodeDL/logic -F . -D output ~/code/ByteCodeDL/example/ptaint-example-1.dl</span><br></pre></td></tr></table></figure>
+<p>然后在ouput目录能够看到<code>grep &quot;Demo3&quot; TaintVar.csv</code>结果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/@parameter0</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/$stack5</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/$stack6</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/$stack7</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/$stack8</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void main(java.lang.String[])&gt;/name#_6</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/name#_0</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/sql1#_12</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;/sql0#_11</span><br></pre></td></tr></table></figure>
+<p>可以看到sql1和sql0都是污点，sql不是污点，比较符合我们的预期。</p>
+<p>下面介绍如何编写出<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/ptaint-upgrade/example/ptaint-example-1.dl" target="_blank" rel="noopener">ptaint-example-1.dl</a></p>
+<p>首先要实例化Ptaint 并 初始化污点分析的起始方法，在这里起始方法，也就是分析的入口，为TaintDemo3的main函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">// 实例化ptaint</span><br><span class="line">.init ptaint = PTaint</span><br><span class="line"></span><br><span class="line">// 初始化上下文无关文法的入口函数</span><br><span class="line">ptaint.cipt.Reachable(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void main(java.lang.String[])&gt;&quot;).</span><br></pre></td></tr></table></figure>
+<p>然后定义Source，Sink和Sanitize函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// 定义source函数</span><br><span class="line">ptaint.SourceMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Source()&gt;&quot;).</span><br><span class="line">// 定义危险函数</span><br><span class="line">ptaint.SinkMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void Sink(java.lang.String)&gt;&quot;, 0).</span><br><span class="line">// 定义净化函数</span><br><span class="line">ptaint.SanitizeMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Sanitize(java.lang.String)&gt;&quot;).</span><br></pre></td></tr></table></figure>
+<p>接下来就是定义污点转移函数了，这时候只看java代码看不出来东西，这时候需要看soot生成的jimple代码，也就是下面的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">public void test1(java.lang.String)</span><br><span class="line">   &#123;</span><br><span class="line">       java.lang.StringBuilder $stack5, $stack6, $stack7, $stack8;</span><br><span class="line">       java.lang.String name#_0, sql0#_11, sql1#_12, sql#_13;</span><br><span class="line">       com.bytecodedl.benchmark.demo.TaintDemo3 this#_0;</span><br><span class="line"></span><br><span class="line">       this#_0 := @this: com.bytecodedl.benchmark.demo.TaintDemo3;</span><br><span class="line"></span><br><span class="line">       name#_0 := @parameter0: java.lang.String;</span><br><span class="line"></span><br><span class="line">       $stack5 = new java.lang.StringBuilder;</span><br><span class="line"></span><br><span class="line">       specialinvoke $stack5.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();</span><br><span class="line"></span><br><span class="line">       $stack6 = virtualinvoke $stack5.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;select * from user where name=\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">       $stack7 = virtualinvoke $stack6.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(name#_0);</span><br><span class="line"></span><br><span class="line">       $stack8 = virtualinvoke $stack7.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">       sql0#_11 = virtualinvoke $stack8.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();</span><br><span class="line"></span><br><span class="line">       sql1#_12 = sql0#_11;</span><br><span class="line"></span><br><span class="line">       sql#_13 = virtualinvoke this#_0.&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Sanitize(java.lang.String)&gt;(sql1#_12);</span><br><span class="line"></span><br><span class="line">       virtualinvoke this#_0.&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void Sink(java.lang.String)&gt;(sql#_13);</span><br><span class="line"></span><br><span class="line">       return;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>也就是将字符串的拼接分成了下面几步</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$stack5 = new java.lang.StringBuilder;</span><br><span class="line"></span><br><span class="line">specialinvoke $stack5.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();</span><br><span class="line"></span><br><span class="line">$stack6 = virtualinvoke $stack5.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;select * from user where name=\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">$stack7 = virtualinvoke $stack6.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(name#_0);</span><br><span class="line"></span><br><span class="line">$stack8 = virtualinvoke $stack7.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">sql0#_11 = virtualinvoke $stack8.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();</span><br></pre></td></tr></table></figure>
+<p>转换成java就是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$stack5 = new StringBuilder();</span><br><span class="line">$stack6 = $stack5.append(&quot;select * from user where name=\&apos;&quot;);</span><br><span class="line">$stack7 = $stack6.append(name#_0);</span><br><span class="line">$stack8 = $stack7.append(&quot;\&apos;&quot;);</span><br><span class="line">$sql0#_11 = $stack8.toString();</span><br></pre></td></tr></table></figure>
+<p>name#_0 是污点变量，由于<code>$stack7 = $stack6.append(name#_0);</code> ，我门希望<code>$stack7</code>也是污点变量，所以这里应该添加个arg 向 ret的转移。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ptaint.ArgToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;, 0).</span><br></pre></td></tr></table></figure>
+<p>由于<code>$stack7</code>是污点变量，由于<code>$stack8 = $stack7.append(&quot;\&#39;&quot;);</code> ，我们希望<code>$stack8</code>也是污点变量，所以这里应该添加个base 向 ret的转移。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;).</span><br></pre></td></tr></table></figure>
+<p>由于<code>$stack8</code>是污点变量，由于<code>$sql0#_11 = $stack8.toString();</code>，我们希望<code>$sql0#_11</code>也是污点变量，所以这里应该添加个base 向ret的转移。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.String toString()&gt;&quot;).</span><br></pre></td></tr></table></figure>
+<p>全部规则如下： <a href="https://github.com/BytecodeDL/ByteCodeDL/blob/ptaint-upgrade/example/ptaint-example-1.dl" target="_blank" rel="noopener">ptaint-example-1.dl</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">#include &quot;inputDeclaration.dl&quot;</span><br><span class="line">#include &quot;utils.dl&quot;</span><br><span class="line">#include &quot;ptaint.dl&quot;</span><br><span class="line"></span><br><span class="line">// 实例化ptaint</span><br><span class="line">.init ptaint = PTaint</span><br><span class="line"></span><br><span class="line">// 初始化上下文无关文法的入口函数</span><br><span class="line">ptaint.cipt.Reachable(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void main(java.lang.String[])&gt;&quot;).</span><br><span class="line"></span><br><span class="line">// 定义source函数</span><br><span class="line">ptaint.SourceMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Source()&gt;&quot;).</span><br><span class="line">// 定义危险函数</span><br><span class="line">ptaint.SinkMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void Sink(java.lang.String)&gt;&quot;, 0).</span><br><span class="line">// 定义净化函数</span><br><span class="line">ptaint.SanitizeMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Sanitize(java.lang.String)&gt;&quot;).</span><br><span class="line"></span><br><span class="line">// 定义污点转移函数</span><br><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;).</span><br><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.String toString()&gt;&quot;).</span><br><span class="line"></span><br><span class="line">ptaint.ArgToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;, 0).</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">.decl TaintVar(var:Var)</span><br><span class="line"></span><br><span class="line">TaintVar(var) :-</span><br><span class="line">    ptaint.cipt.VarPointsTo(heap, var),</span><br><span class="line">    ptaint.TaintHeap(_, heap).</span><br><span class="line"></span><br><span class="line">.output TaintVar</span><br><span class="line"></span><br><span class="line">.output ptaint.TaintHeap</span><br><span class="line">.output ptaint.TransferTaint</span><br><span class="line">.output ptaint.cipt.VarPointsTo</span><br></pre></td></tr></table></figure>
+<p>但是在分析<a href="https://github.com/BytecodeDL/Benchmark/blob/main/src/main/java/com/bytecodedl/benchmark/demo/TaintDemo2.java" target="_blank" rel="noopener">TaintDemo2</a>的时候，就会发现遇到问题了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TaintDemo2</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        TaintDemo2 demo = <span class="keyword">new</span> TaintDemo2();</span><br><span class="line">        String name = demo.Source();</span><br><span class="line">        demo.test1(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test1</span><span class="params">(String name)</span></span>&#123;</span><br><span class="line">        String sql = <span class="string">"select * from user where name='"</span> + name + <span class="string">"'"</span>;</span><br><span class="line">        sql = Sanitize(sql);</span><br><span class="line">        Sink(sql);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Sink</span><span class="params">(String param)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">Sanitize</span><span class="params">(String param)</span></span>&#123;</span><br><span class="line">        String ret = param.replace(<span class="string">'\''</span>, <span class="string">'`'</span>);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">Source</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"tainted name"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对应的jimple为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">public void test1(java.lang.String)</span><br><span class="line">    &#123;</span><br><span class="line">        java.lang.StringBuilder $stack3, $stack4, $stack5, $stack6;</span><br><span class="line">        java.lang.String name#_0, sql#_11;</span><br><span class="line">        com.bytecodedl.benchmark.demo.TaintDemo2 this#_0;</span><br><span class="line"></span><br><span class="line">        this#_0 := @this: com.bytecodedl.benchmark.demo.TaintDemo2;</span><br><span class="line"></span><br><span class="line">        name#_0 := @parameter0: java.lang.String;</span><br><span class="line"></span><br><span class="line">        $stack3 = new java.lang.StringBuilder;</span><br><span class="line"></span><br><span class="line">        specialinvoke $stack3.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();</span><br><span class="line"></span><br><span class="line">        $stack4 = virtualinvoke $stack3.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;select * from user where name=\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">        $stack5 = virtualinvoke $stack4.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(name#_0);</span><br><span class="line"></span><br><span class="line">        $stack6 = virtualinvoke $stack5.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">        sql#_11 = virtualinvoke $stack6.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();</span><br><span class="line"></span><br><span class="line">        sql#_11 = virtualinvoke this#_0.&lt;com.bytecodedl.benchmark.demo.TaintDemo2: java.lang.String Sanitize(java.lang.String)&gt;(sql#_11);</span><br><span class="line"></span><br><span class="line">        virtualinvoke this#_0.&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void Sink(java.lang.String)&gt;(sql#_11);</span><br><span class="line"></span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>将ptaint-example-1.dl中的TaintDemo3换成TaintDemo2之后后</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void test1(java.lang.String)&gt;/@parameter0</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void Sink(java.lang.String)&gt;/@parameter0</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: java.lang.String Sanitize(java.lang.String)&gt;/ret#_21</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void test1(java.lang.String)&gt;/$stack3</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void test1(java.lang.String)&gt;/$stack4</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void test1(java.lang.String)&gt;/$stack5</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void test1(java.lang.String)&gt;/$stack6</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void main(java.lang.String[])&gt;/name#_6</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void test1(java.lang.String)&gt;/name#_0</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void test1(java.lang.String)&gt;/sql#_11</span><br><span class="line">&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void Sink(java.lang.String)&gt;/param#_0</span><br></pre></td></tr></table></figure>
+<p>会发现<code>sql#_11</code> 虽然经过了Sanitize处理，但是还是被标记为了污点变量，这是为什么呢？这是因为目前的分析都是流不敏感的，有没有什么办法解决呢？有在创建facts时加上<code>--ssa</code>参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java8 -jar ~/code/soot-fact-generator/build/libs/soot-fact-generator.jar -i Benchmark-1.0-SNAPSHOT.jar --full -l /Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home/jre/lib/rt.jar -d tainttest --allow-phantom --generate-jimple --ssa</span><br></pre></td></tr></table></figure>
+<p>加上这个参数之后会生成shimple，保证每个变量只会被赋值一次，就会变成下面这样</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">public void test1(java.lang.String)</span><br><span class="line">    &#123;</span><br><span class="line">        java.lang.StringBuilder $stack3, $stack4, $stack5, $stack6;</span><br><span class="line">        java.lang.String name#_0, sql#_11, sql_$$A_1#_12;</span><br><span class="line">        com.bytecodedl.benchmark.demo.TaintDemo2 this#_0;</span><br><span class="line"></span><br><span class="line">        this#_0 := @this: com.bytecodedl.benchmark.demo.TaintDemo2;</span><br><span class="line"></span><br><span class="line">        name#_0 := @parameter0: java.lang.String;</span><br><span class="line"></span><br><span class="line">        $stack3 = new java.lang.StringBuilder;</span><br><span class="line"></span><br><span class="line">        specialinvoke $stack3.&lt;java.lang.StringBuilder: void &lt;init&gt;()&gt;();</span><br><span class="line"></span><br><span class="line">        $stack4 = virtualinvoke $stack3.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;select * from user where name=\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">        $stack5 = virtualinvoke $stack4.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(name#_0);</span><br><span class="line"></span><br><span class="line">        $stack6 = virtualinvoke $stack5.&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;(&quot;\&apos;&quot;);</span><br><span class="line"></span><br><span class="line">        sql#_11 = virtualinvoke $stack6.&lt;java.lang.StringBuilder: java.lang.String toString()&gt;();</span><br><span class="line"></span><br><span class="line">        sql_$$A_1#_12 = virtualinvoke this#_0.&lt;com.bytecodedl.benchmark.demo.TaintDemo2: java.lang.String Sanitize(java.lang.String)&gt;(sql#_11);</span><br><span class="line"></span><br><span class="line">        virtualinvoke this#_0.&lt;com.bytecodedl.benchmark.demo.TaintDemo2: void Sink(java.lang.String)&gt;(sql_$$A_1#_12);</span><br><span class="line"></span><br><span class="line">        return;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>原本Sanitize返回的也是<code>sql#_11</code> 现在变成了<code>sql_$$A_1#_12</code>，这样就能区分原本两个同名变量在不同时刻的值了。</p>
+<h2 id="Example-2"><a href="#Example-2" class="headerlink" title="Example 2"></a>Example 2</h2><p>在实际的场景中，比如spring开发框架下，污点源不是来自source函数的返回值，可能来自函数的参数，这种情况该怎么处理呢？</p>
+<p>我们还以TaintDemo3为例，我们以test1方法为分析的起点，形式参数name作为污点源。这时候我们需要模拟创建对象，包括test1@this 以及name参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">.decl EntryMethod(method:Method)</span><br><span class="line"></span><br><span class="line">EntryMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;&quot;).</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">ptaint.cipt.Reachable(method) :-</span><br><span class="line">    EntryMethod(method).</span><br><span class="line"></span><br><span class="line">NormalHeap(heap, class),</span><br><span class="line">ptaint.cipt.VarPointsTo(heap, this) :-</span><br><span class="line">    ThisVar(method, this),</span><br><span class="line">    EntryMethod(method),</span><br><span class="line">    VarType(this, class),</span><br><span class="line">    heap = cat(&quot;Mock::&quot;, class).</span><br><span class="line"></span><br><span class="line">NormalHeap(heap, class),</span><br><span class="line">ptaint.TaintHeap(insn, taintHeap),</span><br><span class="line">ptaint.cipt.VarPointsTo(heap, param),</span><br><span class="line">ptaint.cipt.VarPointsTo(taintHeap, param) :- </span><br><span class="line">    EntryMethod(method),</span><br><span class="line">    FormalParam(_, method, param),</span><br><span class="line">    VarType(param, class),</span><br><span class="line">    heap = cat(&quot;Mock::&quot;, class),</span><br><span class="line">    taintHeap = cat(&quot;NewTainted::&quot;, class),</span><br><span class="line">    insn = &quot;Init::Param&quot;.</span><br></pre></td></tr></table></figure>
+<p>其他部分同ptaint-example-1.dl，完整见<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/ptaint-upgrade/example/ptaint-example-2.dl" target="_blank" rel="noopener">ptaint-example-2.dl</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">#include &quot;inputDeclaration.dl&quot;</span><br><span class="line">#include &quot;utils.dl&quot;</span><br><span class="line">#include &quot;ptaint.dl&quot;</span><br><span class="line"></span><br><span class="line">.init ptaint = PTaint</span><br><span class="line"></span><br><span class="line">// 定义入口函数</span><br><span class="line">.decl EntryMethod(method:Method)</span><br><span class="line"></span><br><span class="line">EntryMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void test1(java.lang.String)&gt;&quot;).</span><br><span class="line"></span><br><span class="line">// 初始化指针分析入口函数</span><br><span class="line">ptaint.cipt.Reachable(method) :-</span><br><span class="line">    EntryMethod(method).</span><br><span class="line"></span><br><span class="line">// test1@this 指向虚拟创建的对象</span><br><span class="line">NormalHeap(heap, class),</span><br><span class="line">ptaint.cipt.VarPointsTo(heap, this) :-</span><br><span class="line">    ThisVar(method, this),</span><br><span class="line">    EntryMethod(method),</span><br><span class="line">    VarType(this, class),</span><br><span class="line">    heap = cat(&quot;Mock::&quot;, class).</span><br><span class="line"></span><br><span class="line">// test1的参数，指向虚拟创建的污点对象和正常对象</span><br><span class="line">NormalHeap(heap, class),</span><br><span class="line">ptaint.TaintHeap(insn, taintHeap),</span><br><span class="line">ptaint.cipt.VarPointsTo(heap, param),</span><br><span class="line">ptaint.cipt.VarPointsTo(taintHeap, param) :- </span><br><span class="line">    EntryMethod(method),</span><br><span class="line">    FormalParam(_, method, param),</span><br><span class="line">    VarType(param, class),</span><br><span class="line">    heap = cat(&quot;Mock::&quot;, class),</span><br><span class="line">    taintHeap = cat(&quot;NewTainted::&quot;, class),</span><br><span class="line">    insn = &quot;Init::Param&quot;.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">ptaint.SourceMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Source()&gt;&quot;).</span><br><span class="line">ptaint.SinkMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: void Sink(java.lang.String)&gt;&quot;, 0).</span><br><span class="line"></span><br><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;).</span><br><span class="line">ptaint.BaseToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.String toString()&gt;&quot;).</span><br><span class="line"></span><br><span class="line">ptaint.ArgToRetTransfer(&quot;&lt;java.lang.StringBuilder: java.lang.StringBuilder append(java.lang.String)&gt;&quot;, 0).</span><br><span class="line"></span><br><span class="line">ptaint.SanitizeMethod(&quot;&lt;com.bytecodedl.benchmark.demo.TaintDemo3: java.lang.String Sanitize(java.lang.String)&gt;&quot;).</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">.decl TaintVar(var:Var)</span><br><span class="line"></span><br><span class="line">TaintVar(var) :-</span><br><span class="line">    ptaint.cipt.VarPointsTo(heap, var),</span><br><span class="line">    ptaint.TaintHeap(_, heap).</span><br><span class="line"></span><br><span class="line">.output TaintVar</span><br><span class="line"></span><br><span class="line">.output ptaint.TaintHeap</span><br><span class="line">.output ptaint.TransferTaint</span><br><span class="line">.output ptaint.cipt.VarPointsTo</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/java/" rel="tag"># java</a>
+            
+              <a href="/tags/bytecodedl/" rel="tag"># bytecodedl</a>
+            
+              <a href="/tags/static-analysis/" rel="tag"># static-analysis</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2022/05/05/bytecodedl-cha-in-ctf/" rel="next" title="ByteCodeDL应用篇之CHA在CTF中的应用">
+                  <i class="fa fa-chevron-left"></i> ByteCodeDL应用篇之CHA在CTF中的应用
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2022/05/07/can-codeql-find-log4shell/" rel="prev" title="CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？">
+                  CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？ <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction"><span class="nav-number">1.</span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example-1"><span class="nav-number">2.</span> <span class="nav-text">Example 1</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example-2"><span class="nav-number">3.</span> <span class="nav-text">Example 2</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

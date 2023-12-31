@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="本文首发于跳跳糖 本文将回答下面几个问题：  CodeQL能否找到log4shell这个漏洞 如何基于log4j-api-2.14.1.jar和log4j-core-2.14.1.jar创建CodeQL database 如何基于CodeQL进行调用图分析 CodeQL如何解析多态调用 如何对CodeQL的污点分析进行debug  前言传言log4shell这个漏洞是通过CodeQL发现的，而且是">
+<meta name="keywords" content="java,static-analysis,codeql,vuln">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？">
+<meta property="og:url" content="https://blog.sometimenaive.com/2022/05/07/can-codeql-find-log4shell/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="本文首发于跳跳糖 本文将回答下面几个问题：  CodeQL能否找到log4shell这个漏洞 如何基于log4j-api-2.14.1.jar和log4j-core-2.14.1.jar创建CodeQL database 如何基于CodeQL进行调用图分析 CodeQL如何解析多态调用 如何对CodeQL的污点分析进行debug  前言传言log4shell这个漏洞是通过CodeQL发现的，而且是">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220419224552489.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220419230109204.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220420215759328.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220421164727246.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422091742912.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422091925773.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422095651627.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422100155752.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422102314510.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422193309673.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422154719773.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422155558162.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422155733238.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422150841944.png.webp">
+<meta property="og:updated_time" content="2023-12-31T12:47:14.833Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？">
+<meta name="twitter:description" content="本文首发于跳跳糖 本文将回答下面几个问题：  CodeQL能否找到log4shell这个漏洞 如何基于log4j-api-2.14.1.jar和log4j-core-2.14.1.jar创建CodeQL database 如何基于CodeQL进行调用图分析 CodeQL如何解析多态调用 如何对CodeQL的污点分析进行debug  前言传言log4shell这个漏洞是通过CodeQL发现的，而且是">
+<meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2022/4/image-20220419224552489.png.webp">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2022/05/07/can-codeql-find-log4shell/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？ | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-recommend">
+      
+    
+
+    <a href="/recommend" rel="section"><i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br>recommend</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2022/05/07/can-codeql-find-log4shell/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">CodeQL能找到log4shell(CVE-2021-44228)漏洞吗？
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2022-05-07 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-07T00:00:00+00:00">2022-05-07</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-12-31 12:47:14" itemprop="dateModified" datetime="2023-12-31T12:47:14+00:00">2023-12-31</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/sec/" itemprop="url" rel="index"><span itemprop="name">sec</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文首发于<a href="https://tttang.com/archive/1570/" target="_blank" rel="noopener">跳跳糖</a></p>
+<p>本文将回答下面几个问题：</p>
+<ol>
+<li>CodeQL能否找到log4shell这个漏洞</li>
+<li>如何基于log4j-api-2.14.1.jar和log4j-core-2.14.1.jar创建CodeQL database</li>
+<li>如何基于CodeQL进行调用图分析</li>
+<li>CodeQL如何解析多态调用</li>
+<li>如何对CodeQL的污点分析进行debug</li>
+</ol>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>传言log4shell这个漏洞是通过CodeQL发现的，而且是在lgtm.com发现的。我就想试一下CodeQL到底能不能发现log4shell这个漏洞。</p>
+<p>我先尝试去lgtm.com上尝试去找被修复前的版本，我之前记得是lgtm可以看历史commit的分析结果的。然而我现在再去lgtm上找发现不能切换commit了，只能在history那个页面看commit的记录，但是那个页面只能看到新增代码对应的漏洞，在浏览的时候发现了个：</p>
+<p><a href="https://lgtm.com/projects/g/apache/logging-log4j2/rev/14e307ac825f9c169f8c14203c680564d1943ac2" target="_blank" rel="noopener">https://lgtm.com/projects/g/apache/logging-log4j2/rev/14e307ac825f9c169f8c14203c680564d1943ac2</a></p>
+<p>这个对应的时间是2021.12.25是漏洞发现后的提交记录，但是我猜测原本应该是和这个差不多的提示。因为检测jndi注入的规则是：</p>
+<p><a href="https://github.com/github/codeql/blob/main/java/ql/src/Security/CWE/CWE-074/JndiInjection.ql" target="_blank" rel="noopener">https://github.com/github/codeql/blob/main/java/ql/src/Security/CWE/CWE-074/JndiInjection.ql</a></p>
+<p><a href="https://github.com/github/codeql/blob/82463c9290a64b6ca4966d0e31eefc970154cbe0/java/ql/lib/semmle/code/java/security/JndiInjectionQuery.qll" target="_blank" rel="noopener">https://github.com/github/codeql/blob/82463c9290a64b6ca4966d0e31eefc970154cbe0/java/ql/lib/semmle/code/java/security/JndiInjectionQuery.qll</a></p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220419224552489.png.webp" alt="image-20220419224552489"></p>
+<p>从图中可以看到source是RemoteFlowSource，所以查出来的路径不可能直接从log#error等方法的参数直接传到Context#lookup的参数。</p>
+<p>如果再往后翻翻，找到提交JndiManager.java提交的记录应该就行了？然而现实很骨感</p>
+<p>创建那个JndiManager.java文件的提交commit是c017d3e87f7704a247245a4f7ddf879a77563ea4</p>
+<p>然后访问 <a href="https://lgtm.com/projects/g/apache/logging-log4j2/rev/c017d3e87f7704a247245a4f7ddf879a77563ea4" target="_blank" rel="noopener">https://lgtm.com/projects/g/apache/logging-log4j2/rev/c017d3e87f7704a247245a4f7ddf879a77563ea4</a> 显示404</p>
+<p>又访问另一个commit <a href="https://lgtm.com/projects/g/apache/logging-log4j2/rev/19c92876f957a8439fa9c21ea6b9c13aced0c006" target="_blank" rel="noopener">https://lgtm.com/projects/g/apache/logging-log4j2/rev/19c92876f957a8439fa9c21ea6b9c13aced0c006</a> 显示build失败</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220419230109204.png.webp" alt="image-20220419230109204"></p>
+<h2 id="创建log4j2-database"><a href="#创建log4j2-database" class="headerlink" title="创建log4j2 database"></a>创建log4j2 database</h2><p>只剩自己创建database进行分析这一条路了。</p>
+<p>lgtm支持输入github地址创建project，然后我就clone了log4j2的repo到本地，然后回滚到修复前的版本，然后传到了<a href="https://github.com/BytecodeDL/log4j2" target="_blank" rel="noopener">https://github.com/BytecodeDL/log4j2</a> 创建了<a href="https://lgtm.com/projects/g/BytecodeDL/log4j2/" target="_blank" rel="noopener">https://lgtm.com/projects/g/BytecodeDL/log4j2/</a> 这个project，创建的时候并没有那么顺利，刚开始直接build的时候还是失败，然后加了一些配置也不行，后来rebuild了一下好像就好了，也有可能是我修复了pom文件让build成功了。具体原因不详，复现的话可以reset到这个231596956e23a1dd1aadf48c5e0f9ad0089a9940，然后查看alert好像也并没有出现jndi alert 也不知道哪里出了问题。然后又把这个<a href="https://xz.aliyun.com/t/10707" target="_blank" rel="noopener">文章</a> 中的规则，复制上去，执行发现，可以查出<a href="https://lgtm.com/query/8933533521592614598/" target="_blank" rel="noopener">结果</a>但是和文章中的不太一样。</p>
+<p>原本以为线上创建的数据库有问题，想本地再build一次，但是本地死活build不起来，因为没有JDK9，安装一个又觉得费劲。开始研究能不能像ByteCodeDL那样直接从bytecode创建CodeQL的database。经过一周的研究发现理论上是可行的，但是由于本人编译原理相关知识相对薄弱，暂时没有完成这项工作。在研究的时候发现CodeQL在创建java database时实际不需要编译，仅有源码即可创建database，研究产出见项目<a href="https://github.com/waderwu/extractor-java" target="_blank" rel="noopener">extractor-java</a>。关于CodeQL java extractor分析，有空再补一篇文章。先尝试直接从clone下来的源码创建，但是遇到了未知bug，在排除test文件后可以创建database。最终通过反编译<code>log4j-api-2.14.1.jar</code> 和<code>log4j-core-2.14.1.jar</code> ，然后再利用<a href="extractor-java">extractor-java</a>成功创建log4j2的database。没错又回到了反编译这条路，<a href="extractor-java">extractor-java</a>和<a href="https://github.com/ice-doom/codeql_compile" target="_blank" rel="noopener">codeql_compile</a>有什么区别呢？区别在于extractor-java反编译之后不需要再进行build。CodeQL创建database大致过程为，先利用CodeQL魔改的javacc读取java文件，将源码解析成AST，然后遍历AST节点生成Trap文件，最会将Trap文件转换成database。</p>
+<h2 id="调用图分析"><a href="#调用图分析" class="headerlink" title="调用图分析"></a>调用图分析</h2><p>通过调试，测试代码为</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">logshell</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Logger logger = LogManager.getLogger();</span><br><span class="line">        logger.error(<span class="string">"ffff$&#123;jndi://127.0.0.1:8787&#125;"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>得到运行时的调用栈</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">lookup:417, InitialContext (javax.naming)</span><br><span class="line">lookup:172, JndiManager (org.apache.logging.log4j.core.net)</span><br><span class="line">lookup:56, JndiLookup (org.apache.logging.log4j.core.lookup)</span><br><span class="line">lookup:221, Interpolator (org.apache.logging.log4j.core.lookup)</span><br><span class="line">resolveVariable:1110, StrSubstitutor (org.apache.logging.log4j.core.lookup)</span><br><span class="line">substitute:1033, StrSubstitutor (org.apache.logging.log4j.core.lookup)</span><br><span class="line">substitute:912, StrSubstitutor (org.apache.logging.log4j.core.lookup)</span><br><span class="line">replace:467, StrSubstitutor (org.apache.logging.log4j.core.lookup)</span><br><span class="line">format:132, MessagePatternConverter (org.apache.logging.log4j.core.pattern)</span><br><span class="line">format:38, PatternFormatter (org.apache.logging.log4j.core.pattern)</span><br><span class="line">toSerializable:344, PatternLayout$PatternSerializer (org.apache.logging.log4j.core.layout)</span><br><span class="line">toText:244, PatternLayout (org.apache.logging.log4j.core.layout)</span><br><span class="line">encode:229, PatternLayout (org.apache.logging.log4j.core.layout)</span><br><span class="line">encode:59, PatternLayout (org.apache.logging.log4j.core.layout)</span><br><span class="line">directEncodeEvent:197, AbstractOutputStreamAppender (org.apache.logging.log4j.core.appender)</span><br><span class="line">tryAppend:190, AbstractOutputStreamAppender (org.apache.logging.log4j.core.appender)</span><br><span class="line">append:181, AbstractOutputStreamAppender (org.apache.logging.log4j.core.appender)</span><br><span class="line">tryCallAppender:156, AppenderControl (org.apache.logging.log4j.core.config)</span><br><span class="line">callAppender0:129, AppenderControl (org.apache.logging.log4j.core.config)</span><br><span class="line">callAppenderPreventRecursion:120, AppenderControl (org.apache.logging.log4j.core.config)</span><br><span class="line">callAppender:84, AppenderControl (org.apache.logging.log4j.core.config)</span><br><span class="line">callAppenders:540, LoggerConfig (org.apache.logging.log4j.core.config)</span><br><span class="line">processLogEvent:498, LoggerConfig (org.apache.logging.log4j.core.config)</span><br><span class="line">log:481, LoggerConfig (org.apache.logging.log4j.core.config)</span><br><span class="line">log:456, LoggerConfig (org.apache.logging.log4j.core.config)</span><br><span class="line">log:63, DefaultReliabilityStrategy (org.apache.logging.log4j.core.config)</span><br><span class="line">log:161, Logger (org.apache.logging.log4j.core)</span><br><span class="line">tryLogMessage:2205, AbstractLogger (org.apache.logging.log4j.spi)</span><br><span class="line">logMessageTrackRecursion:2159, AbstractLogger (org.apache.logging.log4j.spi)</span><br><span class="line">logMessageSafely:2142, AbstractLogger (org.apache.logging.log4j.spi)</span><br><span class="line">logMessage:2017, AbstractLogger (org.apache.logging.log4j.spi)</span><br><span class="line">logIfEnabled:1983, AbstractLogger (org.apache.logging.log4j.spi)</span><br><span class="line">error:740, AbstractLogger (org.apache.logging.log4j.spi)</span><br><span class="line">main:9, logshell (com.yxxx)</span><br></pre></td></tr></table></figure>
+<p>logger#error一路调用到InitialContext#lookup。先不考虑污点分析，先考虑调用图，看CodeQL能不能找到AbstractLogger#error到InitialContext#lookup的调用路径。</p>
+<p>根据<a href="https://codeql.github.com/codeql-standard-libraries/java/semmle/code/java/Member.qll/type.Member$Callable.html" target="_blank" rel="noopener">文档</a>CodeQL中表达调用关系的有这么三种谓语</p>
+<ul>
+<li><p>calls</p>
+<ul>
+<li><blockquote>
+<p>Holds if this callable calls <code>target</code>.</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li><p>callImpls</p>
+<ul>
+<li><blockquote>
+<p>Holds if c is a viable implementation of a callable called by this callable, taking virtual dispatch resolution into account.</p>
+</blockquote>
+</li>
+</ul>
+</li>
+<li><p>polyCalls</p>
+<ul>
+<li><blockquote>
+<p>Holds if this callable may call the specified callable, taking virtual dispatch into account.</p>
+</blockquote>
+</li>
+</ul>
+</li>
+</ul>
+<p>大概意思就是polyCalls和callImpls会进行虚拟调用解析，而calls直接将编译期间确定函数作为被调函数，即使他是个interface接口。为了搞清楚CodeQL到底是如何解析虚拟函数调用的，我进行了一次黑盒测试，（由于实力不足还不能从代码层面硬刚），得出的结论是，CodeQL解析虚拟函数调用时，基本和CHA差不多。</p>
+<p>测试过程如下，benchmark选取了 <a href="https://github.com/BytecodeDL/Benchmark/tree/main/src/main/java/com/bytecodedl/benchmark/demo" target="_blank" rel="noopener">https://github.com/BytecodeDL/Benchmark/tree/main/src/main/java/com/bytecodedl/benchmark/demo</a> 中的VirtualCalldemo1，VirtualCalldemo2，VirtualCalldemo3 作为测试。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">   </span><br><span class="line"><span class="keyword">package</span> com.bytecodedl.benchmark.demo;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">VirtualCallDemo1</span> <span class="keyword">implements</span> <span class="title">VirtualCallInterface1</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> VirtualCallInterface1 parent;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        VirtualCallInterface1 vcall2 = <span class="keyword">new</span> VirtualCallDemo2();</span><br><span class="line">        VirtualCallDemo1 vcall1 = <span class="keyword">new</span> VirtualCallDemo1(vcall2);</span><br><span class="line">        VirtualCallInterface1 varParent = vcall1.getParent();</span><br><span class="line">        String source = vcall1.source();</span><br><span class="line">        varParent.foo(source);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">VirtualCallDemo1</span><span class="params">(VirtualCallInterface1 argParent)</span></span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.parent = argParent;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> VirtualCallInterface1 <span class="title">getParent</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> parent;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">(String fooArg)</span> </span>&#123;</span><br><span class="line">        VirtualCallDemo1.target(fooArg);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">target</span><span class="params">(String targetArg)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">source</span><span class="params">()</span></span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"source"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关键是考察CodeQL对<code>varParent.foo();</code> ，人为可以判断出<code>varParent.foo()</code> 应该被解析成<code>VirtualCallDemo2#foo</code></p>
+<p>污点分析的结果最终会以path的形式展示在vscode侧栏，对用户非常友好，CallGraph的结果能不能也写成path呢？经过搜索后发现确实可以，参考<a href="https://codeql.github.com/docs/writing-codeql-queries/creating-path-queries/" target="_blank" rel="noopener">文档</a>或者这个<a href="https://github.com/github/codeql/discussions/5353" target="_blank" rel="noopener">Issue</a> 或者下面的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * @kind path-problem</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">import java</span><br><span class="line"></span><br><span class="line">class FooMethod extends Method &#123;</span><br><span class="line">    FooMethod() &#123; </span><br><span class="line">        getName() = &quot;foo&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class TargetMethod extends Method &#123;</span><br><span class="line">    TargetMethod() &#123; </span><br><span class="line">        getName() = &quot;target&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class MyMainMethod extends Method &#123;</span><br><span class="line">    MyMainMethod() &#123; </span><br><span class="line">        getName() = &quot;main&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;com.bytecodedl.benchmark.demo&quot;, &quot;VirtualCallDemo1&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">query predicate edges(Method a, Method b) &#123; a.polyCalls(b) &#125;</span><br><span class="line"></span><br><span class="line">from TargetMethod end, MyMainMethod entryPoint</span><br><span class="line">where edges+(entryPoint, end)</span><br><span class="line">select end, entryPoint, end, &quot;Found a path from start to target.&quot;</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220420215759328.png.webp" alt="image-20220420215759328"></p>
+<p>从分析结果可以看出CodeQL将<code>varParent.foo()</code> 解析成了<code>VirtuallCall1#foo</code>、<code>VirtuallCall2#foo</code> 、 <code>VirtuallCall2#foo</code>，既不符合指针分析的结果，也不符合RTA的结果，非常吻合CHA算法分析的结果。得出这个结果，感觉CodeQL也不是想象中的那么强大，因为过程间的分析非常依赖虚拟函数解析的准确性，然而CHA算法解析不太准确，会带来很多误报，同时也导致分析速度变慢，但是印象中CodeQL分析速度一直都挺快的，CodeQL是有啥黑魔法吗？确实有黑魔法,CodeQL牺牲了精度换来了速度，这个后面再进行进一步介绍。</p>
+<p>言归正传，开始利用CodeQL分析从error到lookup，注意这个要想成功显示path，最后的sink需要时出现在源码中的，要不然显示不出来path，所以这里将Context#lookup的caller也就是JndiManager#lookup作为最终的sink，而不是Context#lookup</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * @kind path-problem</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">import java</span><br><span class="line"></span><br><span class="line">class LookupMethod extends Method &#123;</span><br><span class="line">    LookupMethod() &#123; </span><br><span class="line">        getName() = &quot;lookup&quot; and</span><br><span class="line">        this.getDeclaringType().getASupertype*().hasQualifiedName(&quot;javax.naming&quot;, &quot;Context&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class JndiMangerMethod extends Method &#123;</span><br><span class="line">    JndiMangerMethod() &#123; </span><br><span class="line">        getName() = &quot;lookup&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.core.net&quot;, &quot;JndiManager&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class ErrorMethod extends Method &#123;</span><br><span class="line">    ErrorMethod() &#123;</span><br><span class="line">        getParameterType(0).hasName(&quot;String&quot;) and</span><br><span class="line">        getNumberOfParameters() = 1 and </span><br><span class="line">        getName() = &quot;error&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class StrategyLogMethod extends Method&#123;</span><br><span class="line">    StrategyLogMethod()&#123;</span><br><span class="line">        getName() = &quot;log&quot; and</span><br><span class="line">        this.getDeclaringType().getASupertype*().hasQualifiedName(&quot;org.apache.logging.log4j.core.config&quot;, &quot;DefaultReliabilityStrategy&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">query predicate edges(Method a, Method b) &#123; a.polyCalls(b) &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">from JndiMangerMethod end, ErrorMethod entryPoint</span><br><span class="line">where edges+(entryPoint, end)</span><br><span class="line">select end, entryPoint, end, &quot;Found a path from start to target.&quot;</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220421164727246.png.webp" alt="image-20220421164727246"></p>
+<p>到第8行不一样了，<code>strategy.log(</code> 解析成了AwaitCompletionReliabilityStrategy#log 而不是实际的DefaultReliabilityStrategy#log</p>
+<p>这是什么原因呢？是创建的database的有问题吗？</p>
+<p>下面开始进行debug，先看error能不能到DefaultReliabilityStrategy#log</p>
+<p>将上述代码中的end的类型改成 StrategyLogMethod即可，得出的结果如下：</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422091742912.png.webp" alt="image-20220422091742912"></p>
+<p>从AbstractLogger#error能够调用到DefaultReliabilityStrategy#log ，那么从DefaultReliabilityStrategy#log 能不能调用到JndiManager#lookup呢，答案也是可以的</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422091925773.png.webp" alt="image-20220422091925773"></p>
+<p>哪为啥直接查AbstractLogger#error到JndiManager#lookup没有相应的路径呢？我觉得可能和CodeQL的优化策略有关，导致我们查到的并不是全部的结果，而是CodeQL帮我们选取的部分结果，这种情况在分析大型项目我觉得是无法避免的，如果仅靠CHA解析虚拟函数调用，调用图就会变的比较大，然后找两个点之间的全部路径又是np hard问题，所以CodeQL这样处理也情有可原。</p>
+<p>还有个问题，上面的路径虽然和真实的不一样，有没有可能也是真实的呢？看了一下，走不到那个分支，还没来得及研究走进那个分支需要什么条件。</p>
+<p>做个小结：CodeQL能找到error到lookup的路径，但是找不到和真实调用栈一摸一样的调用路径。</p>
+<h2 id="污点分析"><a href="#污点分析" class="headerlink" title="污点分析"></a>污点分析</h2><p>污点分析，势必要涉及到过程间的数据流分析，过程间的数据流分析又依赖调用图，那CodeQL在进行污点分析时是如何解析虚拟函数调用的呢？接着用VirtualCallDemo1进行黑盒测试</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * @kind path-problem</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line">import java</span><br><span class="line">import semmle.code.java.dataflow.FlowSources</span><br><span class="line">import DataFlow::PathGraph</span><br><span class="line"></span><br><span class="line">class SourceMethod extends Method &#123;</span><br><span class="line">    SourceMethod() &#123; </span><br><span class="line">        getName() = &quot;source&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;com.bytecodedl.benchmark.demo&quot;, &quot;VirtualCallDemo1&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class TargetMethod extends Method &#123;</span><br><span class="line">    TargetMethod() &#123; </span><br><span class="line">        getName() = &quot;target&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class Tainttrack  extends TaintTracking::Configuration &#123;</span><br><span class="line">    Tainttrack() &#123; </span><br><span class="line">        this = &quot;Tainttrack&quot; </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">        exists(SourceMethod sourceMethod, Call call |</span><br><span class="line">            call.getCallee() = sourceMethod and </span><br><span class="line">            source.asExpr() = call)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">        exists(Call call, TargetMethod method |</span><br><span class="line">            call.getCallee() = method and</span><br><span class="line">            sink.asExpr() = call.getAnArgument()</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from Tainttrack config , DataFlow::PathNode source, DataFlow::PathNode sink</span><br><span class="line">where</span><br><span class="line">    config.hasFlowPath(source, sink)</span><br><span class="line">select sink.getNode(), source, sink, &quot;unsafe lookup&quot;, source.getNode(), &quot;this is user input&quot;</span><br></pre></td></tr></table></figure>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422095651627.png.webp" alt="image-20220422095651627"></p>
+<p>依旧存在两条误报，应该还是用polyCalls解析的虚拟函数调用，由于调用图不准确带来的污点传播不准确。</p>
+<p>我首先尝试了<a href="https://xz.aliyun.com/t/10707" target="_blank" rel="noopener">这篇文章</a>中的规则，没有结果查出结果（原因是生成代码的对应的commit不一样），在在线的数据库上可以查到<a href="https://lgtm.com/query/8933533521592614598/" target="_blank" rel="noopener">结果</a>，但是结果和作者查到的并不太一样，没有作者展示的113个节点的path。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422100155752.png.webp" alt="image-20220422100155752"></p>
+<p>然后就开始自己写一版</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> *@name Tainttrack Context lookup</span><br><span class="line"> *@kind path-problem</span><br><span class="line"> */</span><br><span class="line">import java</span><br><span class="line">import semmle.code.java.dataflow.TaintTracking</span><br><span class="line">import DataFlow::PathGraph</span><br><span class="line"></span><br><span class="line">class ErrorMethod extends Method &#123;</span><br><span class="line">    ErrorMethod() &#123;</span><br><span class="line">        getParameterType(0).hasName(&quot;String&quot;) and</span><br><span class="line">        getNumberOfParameters() = 1 and </span><br><span class="line">        getName() = &quot;error&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class LookupMethod extends Method &#123;</span><br><span class="line">    LookupMethod() &#123; </span><br><span class="line">        getName() = &quot;lookup&quot; and</span><br><span class="line">        this.getDeclaringType().getASupertype*().hasQualifiedName(&quot;javax.naming&quot;, &quot;Context&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class TainttrackLookup  extends TaintTracking::Configuration &#123;</span><br><span class="line">    TainttrackLookup() &#123; </span><br><span class="line">        this = &quot;TainttrackLookup&quot; </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">        exists(ErrorMethod method |</span><br><span class="line">            source.asParameter() = method.getParameter(0))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">        exists(Call call, LookupMethod method |</span><br><span class="line">            call.getCallee() = method</span><br><span class="line">            and</span><br><span class="line">            sink.asExpr() = call.getAnArgument()</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">from TainttrackLookup config , DataFlow::PathNode source, DataFlow::PathNode sink</span><br><span class="line">where</span><br><span class="line">    config.hasFlowPath(source, sink)</span><br><span class="line">select sink.getNode(), source, sink, &quot;unsafe lookup&quot;, source.getNode(), &quot;this is user input&quot;</span><br></pre></td></tr></table></figure>
+<p>查不出结果</p>
+<p>下面进行debug</p>
+<p>首先看看isSource和isSink定义的准不准确，可以通过vscode的CodeQL插件的quick evulation功能查看</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422102314510.png.webp" alt="image-20220422102314510"></p>
+<p>isSource和isSink定义都是准确的，不是这里的问题</p>
+<p>然后猜测是污点传播中断的问题，如何判断断在哪里了？一种比较糙的方法就是把isSink设置为永远返回true，看source能够流到哪些node，</p>
+<p>将isSink改成</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">        1 = 1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一共有88个result，一个个的查看也不是很好查看。这样也看不出来啥东西，反正我们是马后炮分析，根据调用栈进行二分法排查错误，看到底断在了哪步。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> *@name Tainttrack Context lookup</span><br><span class="line"> *@kind path-problem</span><br><span class="line"> */</span><br><span class="line">import java</span><br><span class="line">import semmle.code.java.dataflow.TaintTracking</span><br><span class="line">import DataFlow::PathGraph</span><br><span class="line"></span><br><span class="line">class ErrorMethod extends Method &#123;</span><br><span class="line">    ErrorMethod() &#123;</span><br><span class="line">        getParameterType(0).hasName(&quot;String&quot;) and</span><br><span class="line">        getNumberOfParameters() = 1 and </span><br><span class="line">        getName() = &quot;error&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class LookupMethod extends Method &#123;</span><br><span class="line">    LookupMethod() &#123; </span><br><span class="line">        getName() = &quot;lookup&quot; and</span><br><span class="line">        this.getDeclaringType().getASupertype*().hasQualifiedName(&quot;javax.naming&quot;, &quot;Context&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class LogMessageSafely extends Method &#123;</span><br><span class="line">    LogMessageSafely() &#123; </span><br><span class="line">        getName() = &quot;logMessageSafely&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class TainttrackLookup  extends TaintTracking::Configuration &#123;</span><br><span class="line">    TainttrackLookup() &#123; </span><br><span class="line">        this = &quot;TainttrackLookup&quot; </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">        exists(ErrorMethod method |</span><br><span class="line">            source.asParameter() = method.getParameter(0))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">        exists(Call call, LogMessageSafely method |</span><br><span class="line">            call.getCallee() = method</span><br><span class="line">            and</span><br><span class="line">            sink.asExpr() = call.getAnArgument()</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line">    // override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">    //     1 = 1</span><br><span class="line">    // &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">from TainttrackLookup config , DataFlow::PathNode source, DataFlow::PathNode sink</span><br><span class="line">where</span><br><span class="line">    config.hasFlowPath(source, sink)</span><br><span class="line">select sink.getNode(), source, sink, &quot;unsafe lookup&quot;, source.getNode(), &quot;this is user input&quot;</span><br></pre></td></tr></table></figure>
+<p>最终排查出可以到AbstractLogger#logMessage 但是到不了AbstractLogger#logMessageSafely</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">logMessage</span><span class="params">(<span class="keyword">final</span> String fqcn, <span class="keyword">final</span> Level level, <span class="keyword">final</span> Marker marker, <span class="keyword">final</span> String message, <span class="keyword">final</span> Throwable throwable)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.logMessageSafely(fqcn, level, marker, <span class="keyword">this</span>.messageFactory.newMessage(message), throwable);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>也就是说message被污染了，但是<code>this.messageFactory.newMessage(message)</code> 的返回值没有被污染，这不就是典型的参数是污点，返回值不是污点吗，加个isaddtionalStep应该就行了，改善后的</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> *@name Tainttrack Context lookup</span><br><span class="line"> *@kind path-problem</span><br><span class="line"> */</span><br><span class="line">import java</span><br><span class="line">import semmle.code.java.dataflow.TaintTracking</span><br><span class="line">import DataFlow::PathGraph</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">class ErrorMethod extends Method &#123;</span><br><span class="line">    ErrorMethod() &#123;</span><br><span class="line">        getParameterType(0).hasName(&quot;String&quot;) and</span><br><span class="line">        getNumberOfParameters() = 1 and </span><br><span class="line">        getName() = &quot;error&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class LookupMethod extends Method &#123;</span><br><span class="line">    LookupMethod() &#123; </span><br><span class="line">        getName() = &quot;lookup&quot; and</span><br><span class="line">        this.getDeclaringType().getASupertype*().hasQualifiedName(&quot;javax.naming&quot;, &quot;Context&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class LogMessageSafely extends Method &#123;</span><br><span class="line">    LogMessageSafely() &#123; </span><br><span class="line">        getName() = &quot;logMessageSafely&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class TainttrackLookup  extends TaintTracking::Configuration &#123;</span><br><span class="line">    TainttrackLookup() &#123; </span><br><span class="line">        this = &quot;TainttrackLookup&quot; </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">        exists(ErrorMethod method |</span><br><span class="line">            source.asParameter() = method.getParameter(0))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">        exists(Call call, LookupMethod method |</span><br><span class="line">            call.getCallee() = method</span><br><span class="line">            and</span><br><span class="line">            sink.asExpr() = call.getAnArgument()</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isAdditionalTaintStep(DataFlow::Node fromNode, DataFlow::Node toNode) &#123;</span><br><span class="line">        exists(Call call | </span><br><span class="line">            call.getAnArgument() = fromNode.asExpr() and </span><br><span class="line">            toNode.asExpr() = call</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">from TainttrackLookup config , DataFlow::PathNode source, DataFlow::PathNode sink</span><br><span class="line">where</span><br><span class="line">    config.hasFlowPath(source, sink)</span><br><span class="line">select sink.getNode(), source, sink, &quot;unsafe lookup&quot;, source.getNode(), &quot;this is user input&quot;</span><br></pre></td></tr></table></figure>
+<p>可以查到还是没有和真实的调用堆栈并不一样。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422193309673.png.webp" alt="image-20220422193309673"></p>
+<p>为什么会出现这种情况呢？带着这个疑问去找了官方文档，发现了<a href="https://codeql.github.com/docs/writing-codeql-queries/debugging-data-flow-queries-using-partial-flow/" target="_blank" rel="noopener">debugging-data-flow-queries-using-partial-flow</a> 有官方的debug教程</p>
+<p>里面的建议是</p>
+<ol>
+<li>检查source和sink是否正确</li>
+<li>将<code>fieldFlowBranchLimit</code>的值设置大一点，这个值会影响性能</li>
+<li>partial flow</li>
+</ol>
+<p>针对1已经检查过了没有问题，fieldFlowBranchLimit这个值到底是影响啥的？</p>
+<blockquote>
+<p>Gets the virtual dispatch branching limit when calculating field flow. This can be overridden to a smaller value to improve performance (a value of 0 disables field flow), or a larger value to get more results.</p>
+</blockquote>
+<p>不是很清楚field flow是个啥玩意，通过测试设置为5000，6000，8000，18000执行的结果都一样，速度也几乎一样</p>
+<p>那么只剩partial flow了，根据上面的教程，可以改成</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> *@name Tainttrack Context lookup</span><br><span class="line"> *@kind path-problem</span><br><span class="line"> */</span><br><span class="line">import java</span><br><span class="line">import semmle.code.java.dataflow.TaintTracking</span><br><span class="line">// import DataFlow::PathGraph</span><br><span class="line">import DataFlow::PartialPathGraph</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">class ErrorMethod extends Method &#123;</span><br><span class="line">    ErrorMethod() &#123;</span><br><span class="line">        getParameterType(0).hasName(&quot;String&quot;) and</span><br><span class="line">        getNumberOfParameters() = 1 and </span><br><span class="line">        getName() = &quot;error&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class LookupMethod extends Method &#123;</span><br><span class="line">    LookupMethod() &#123; </span><br><span class="line">        getName() = &quot;lookup&quot; and</span><br><span class="line">        this.getDeclaringType().getASupertype*().hasQualifiedName(&quot;javax.naming&quot;, &quot;Context&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class LogMessageSafely extends Method &#123;</span><br><span class="line">    LogMessageSafely() &#123; </span><br><span class="line">        getName() = &quot;logMessageSafely&quot; and</span><br><span class="line">        this.getDeclaringType().hasQualifiedName(&quot;org.apache.logging.log4j.spi&quot;, &quot;AbstractLogger&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">class TainttrackLookup  extends TaintTracking::Configuration &#123;</span><br><span class="line">    TainttrackLookup() &#123; </span><br><span class="line">        this = &quot;TainttrackLookup&quot; </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSource(DataFlow::Node source) &#123;</span><br><span class="line">        exists(ErrorMethod method |</span><br><span class="line">            source.asParameter() = method.getParameter(0))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override predicate isSink(DataFlow::Node sink) &#123;</span><br><span class="line">        exists(Call call, LookupMethod method |</span><br><span class="line">            call.getCallee() = method</span><br><span class="line">            and</span><br><span class="line">            sink.asExpr() = call.getAnArgument()</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    override int explorationLimit() &#123; result = 2 &#125;</span><br><span class="line"></span><br><span class="line">    // override predicate isAdditionalTaintStep(DataFlow::Node fromNode, DataFlow::Node toNode) &#123;</span><br><span class="line">    //     exists(Call call | </span><br><span class="line">    //         call.getAnArgument() = fromNode.asExpr() and </span><br><span class="line">    //         toNode.asExpr() = call</span><br><span class="line">    //     )</span><br><span class="line">    // &#125;</span><br><span class="line"></span><br><span class="line">    // override int fieldFlowBranchLimit() &#123; result = 18000 &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// from TainttrackLookup config , DataFlow::PathNode source, DataFlow::PathNode sink</span><br><span class="line">// where</span><br><span class="line">//     config.hasFlowPath(source, sink)</span><br><span class="line">// select sink.getNode(), source, sink, &quot;unsafe lookup&quot;, source.getNode(), &quot;this is user input&quot;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">from TainttrackLookup config , DataFlow::PartialPathNode source, DataFlow::PartialPathNode sink</span><br><span class="line">where</span><br><span class="line">    config.hasPartialFlow(source, sink, _) </span><br><span class="line">select  sink, source, sink, &quot;Partial flow from unsanitized user data&quot;</span><br></pre></td></tr></table></figure>
+<p>explorationLimit参数的含义为</p>
+<blockquote>
+<p>Gets the exploration limit for <code>hasPartialFlow</code> and <code>hasPartialFlowRev</code> measured in approximate number of interprocedural steps.</p>
+</blockquote>
+<p><del>还是看不懂，这个参数是通过影响啥，改变了性能及结果，这个参数只在partial flow中有用，在正常的污点分析中没有用。</del></p>
+<p>explorationLimit限制了从source节点所在函数开始最多在往下调用函数的数量，和ByteCodeDL限制调用步数时一个道理。</p>
+<p>当explorationLimit为0时，只能在source所在的函数内传播，也就是error方法中传播，</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422154719773.png.webp" alt="image-20220422154719773"></p>
+<p>当explorationLimit为1时，可以传播到logIfEnabled</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422155558162.png.webp" alt="image-20220422155558162"></p>
+<p>当explorationLimit设置为2时有13个result，可以传播到isEnabled和logMessage中</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422155733238.png.webp" alt="image-20220422155733238"></p>
+<p>设置为3时有34个result，设置为4时1819个result，设置为5时就跑不出结果来了</p>
+<p>当设置为4时，我们发现了</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/4/image-20220422150841944.png.webp" alt="image-20220422150841944"></p>
+<p>是可以从error的参数传播到logMessageSafely设置可以传播到DefaultReliabilityStrategy.log，那为啥污点分析不行呢？迷惑！</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li>CodeQL默认的规则应该检测不出log4shell漏洞，通过自定义CodeQL规则不能完全准确的检测出log4shell实际的污点传播路径.</li>
+<li>通过<a href="https://github.com/waderwu/extractor-java" target="_blank" rel="noopener">extractor-java</a>可以在反编译jar包之后，无需再次编译创建CodeQL database，也就是说CodeQL对于java也可以像脚本语言那样有源码就可以数据库，不需要编译。</li>
+<li>基于这两篇文章<a href="https://codeql.github.com/docs/writing-codeql-queries/creating-path-queries/" target="_blank" rel="noopener">creating-path-queries</a>和<a href="https://github.com/github/codeql/discussions/5353" target="_blank" rel="noopener">Issue</a> ，可以在vscode的侧边栏显示调用路径，注意最后的sink需要存在源码</li>
+<li>从黑盒的表现来看，CodeQL使用了CHA算法解析虚拟函数调用</li>
+<li>基于这篇<a href="https://codeql.github.com/docs/writing-codeql-queries/debugging-data-flow-queries-using-partial-flow/" target="_blank" rel="noopener">debugging-data-flow-queries-using-partial-flow</a>  可以通过partial flow进行数据流debug</li>
+</ol>
+<p>CodeQL虽然很强大，但是分析log4j2这样的大型项目时，还是存在很多漏报和误报，但是至少可以给我们一些参考的信息，或者灵感来辅助我们挖洞。</p>
+<p>希望能有下一篇文章Can ByteCodeDL find log4shell vulnerability，能够预测到对于这类大型项目ByteCodeDL的表现应该也好不到哪去。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a href="https://github.com/waderwu/extractor-java" target="_blank" rel="noopener">https://github.com/waderwu/extractor-java</a></li>
+<li><a href="https://codeql.github.com/docs/writing-codeql-queries/debugging-data-flow-queries-using-partial-flow/" target="_blank" rel="noopener">https://codeql.github.com/docs/writing-codeql-queries/debugging-data-flow-queries-using-partial-flow/</a></li>
+<li><a href="https://codeql.github.com/docs/writing-codeql-queries/creating-path-queries/" target="_blank" rel="noopener">https://codeql.github.com/docs/writing-codeql-queries/creating-path-queries/</a></li>
+<li><a href="https://github.com/github/codeql/discussions/5353" target="_blank" rel="noopener">https://github.com/github/codeql/discussions/5353</a></li>
+<li><a href="https://xz.aliyun.com/t/10707" target="_blank" rel="noopener">https://xz.aliyun.com/t/10707</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/java/" rel="tag"># java</a>
+            
+              <a href="/tags/static-analysis/" rel="tag"># static-analysis</a>
+            
+              <a href="/tags/codeql/" rel="tag"># codeql</a>
+            
+              <a href="/tags/vuln/" rel="tag"># vuln</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2022/05/06/bytecodedl-ptaint-implement/" rel="next" title="ByteCodeDL原理篇之手把手教你实现污点分析">
+                  <i class="fa fa-chevron-left"></i> ByteCodeDL原理篇之手把手教你实现污点分析
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2023/12/29/bytecodedl-cha-log4shell/" rel="prev" title="ByteCodeDL能找到log4shell(CVE-2021-44228)漏洞吗">
+                  ByteCodeDL能找到log4shell(CVE-2021-44228)漏洞吗 <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#创建log4j2-database"><span class="nav-number">2.</span> <span class="nav-text">创建log4j2 database</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调用图分析"><span class="nav-number">3.</span> <span class="nav-text">调用图分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#污点分析"><span class="nav-number">4.</span> <span class="nav-text">污点分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">6.</span> <span class="nav-text">参考</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

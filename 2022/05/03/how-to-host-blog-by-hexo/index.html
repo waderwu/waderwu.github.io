@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.4.0">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.4.0">
+  <link rel="mask-icon" href="/images/logo.svg?v=7.4.0" color="#222">
+
+<link rel="stylesheet" href="/css/main.css?v=7.4.0">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Gemini',
+    version: '7.4.0',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false},
+    copycode: {"enable":"enable","show_result":false,"style":"mac"},
+    back2top: {"enable":true,"sidebar":false,"scrollpercent":false},
+    bookmark: {"enable":false,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: '',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    translation: {
+      copy_button: 'Copy',
+      copy_success: 'Copied',
+      copy_failure: 'Copy failed'
+    },
+    sidebarPadding: 40
+  };
+</script>
+
+  <meta name="description" content="2022-05-05 更新由于发现，typora的所见即所得的形式多少有点问题（比如缩进和空行等），所以把markdown编辑器换成了vscode，其中最需要的一个功能，是截图自动复制的功能，通过paste image插件解决。又安装了markdown lint插件进行语法规范。 自动上传图片的功能，就自己写脚本通过正则提取，然后替换了，还行能用。  工欲善其事，必先利其器  我现在貌似有点沉迷于">
+<meta name="keywords" content="geek">
+<meta property="og:type" content="article">
+<meta property="og:title" content="博客搭建过程">
+<meta property="og:url" content="https://blog.sometimenaive.com/2022/05/03/how-to-host-blog-by-hexo/index.html">
+<meta property="og:site_name" content="yxxx&#39;s blog">
+<meta property="og:description" content="2022-05-05 更新由于发现，typora的所见即所得的形式多少有点问题（比如缩进和空行等），所以把markdown编辑器换成了vscode，其中最需要的一个功能，是截图自动复制的功能，通过paste image插件解决。又安装了markdown lint插件进行语法规范。 自动上传图片的功能，就自己写脚本通过正则提取，然后替换了，还行能用。  工欲善其事，必先利其器  我现在貌似有点沉迷于">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/5/image-20220504190048031.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/5/image-20220504190208055.png.webp">
+<meta property="og:image" content="https://blog.sometimenaive.com/blog-img/2022/5/image-20220504190740414.png.webp">
+<meta property="og:updated_time" content="2023-12-31T12:47:14.833Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="博客搭建过程">
+<meta name="twitter:description" content="2022-05-05 更新由于发现，typora的所见即所得的形式多少有点问题（比如缩进和空行等），所以把markdown编辑器换成了vscode，其中最需要的一个功能，是截图自动复制的功能，通过paste image插件解决。又安装了markdown lint插件进行语法规范。 自动上传图片的功能，就自己写脚本通过正则提取，然后替换了，还行能用。  工欲善其事，必先利其器  我现在貌似有点沉迷于">
+<meta name="twitter:image" content="https://blog.sometimenaive.com/blog-img/2022/5/image-20220504190048031.png.webp">
+  <link rel="canonical" href="https://blog.sometimenaive.com/2022/05/03/how-to-host-blog-by-hexo/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true,
+    isPage: false,
+    isArchive: false
+  };
+</script>
+
+  <title>博客搭建过程 | yxxx's blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yxxx's blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+      
+      
+      
+        
+        <li class="menu-item menu-item-home">
+      
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-recommend">
+      
+    
+
+    <a href="/recommend" rel="section"><i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br>recommend</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-about">
+      
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-user"></i> <br>About</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-tags">
+      
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+      
+      
+      
+        
+        <li class="menu-item menu-item-categories">
+      
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+  </ul>
+
+</nav>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+            
+
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+      <article itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block post">
+    <link itemprop="mainEntityOfPage" href="https://blog.sometimenaive.com/2022/05/03/how-to-host-blog-by-hexo/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="yxxx">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yxxx's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">博客搭建过程
+
+          
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              
+                
+              
+
+              <time title="Created: 2022-05-03 23:15:00" itemprop="dateCreated datePublished" datetime="2022-05-03T23:15:00+00:00">2022-05-03</time>
+            </span>
+          
+            
+
+            
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-12-31 12:47:14" itemprop="dateModified" datetime="2023-12-31T12:47:14+00:00">2023-12-31</time>
+              </span>
+            
+          
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/dev/" itemprop="url" rel="index"><span itemprop="name">dev</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="2022-05-05-更新"><a href="#2022-05-05-更新" class="headerlink" title="2022-05-05 更新"></a>2022-05-05 更新</h2><p>由于发现，typora的所见即所得的形式多少有点问题（比如缩进和空行等），所以把markdown编辑器换成了vscode，其中最需要的一个功能，是截图自动复制的功能，通过<a href="https://marketplace.visualstudio.com/items?itemName=mushan.vscode-paste-image" target="_blank" rel="noopener">paste image</a>插件解决。又安装了<a href="https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint" target="_blank" rel="noopener">markdown lint</a>插件进行语法规范。</p>
+<p>自动上传图片的功能，就自己写脚本通过正则提取，然后替换了，还行能用。</p>
+<blockquote>
+<p>工欲善其事，必先利其器</p>
+</blockquote>
+<p>我现在貌似有点沉迷于造器，然后却丢失了做事的本质。希望以后能多写点吧，毕竟是自己的blog，想逼逼啥逼逼啥。也不搞啥统计，那样给自己徒增压力，写的不咋地，能找到的都是有缘人，哈哈哈哈，就这样了，应该不会再折腾了。</p>
+<p>目前vscode配置了</p>
+<ul>
+<li><p>插件</p>
+<ul>
+<li>paste-imgage</li>
+<li><p>markdownlint</p>
+<ul>
+<li><p>disable 了一些规则</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&quot;markdownlint.config&quot;: &#123;</span><br><span class="line">        &quot;Md033&quot;: false,</span><br><span class="line">        &quot;MD040&quot;: false,</span><br><span class="line">        &quot;MD045&quot;: false,</span><br><span class="line">        &quot;MD041&quot;: false</span><br><span class="line">    &#125;,</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>snippet</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">&quot;blog title front matter&quot;: &#123;</span><br><span class="line">  &quot;scope&quot;: &quot;markdown&quot;,</span><br><span class="line">  &quot;prefix&quot;: &quot;tblog&quot;,</span><br><span class="line">  &quot;body&quot;: [</span><br><span class="line">  &quot;---&quot;,</span><br><span class="line">  &quot;title: &quot;,</span><br><span class="line">  &quot;tags: &quot;,</span><br><span class="line">  &quot;categories: &quot;,</span><br><span class="line">  &quot;date: $CURRENT_YEAR/$CURRENT_MONTH/$CURRENT_DATE&quot;,</span><br><span class="line">  &quot;uri: &quot;,</span><br><span class="line">  &quot;---&quot;</span><br><span class="line">  ],</span><br><span class="line">  &quot;description&quot;: &quot;blog fronter matter&quot;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>其他配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&quot;markdown.preview.breaks&quot;: true, // 渲染时将一个回车键就视为换行，github和hexo也都支持这个配置</span><br><span class="line">&quot;[markdown]&quot;: &#123; &quot;editor.quickSuggestions&quot;: true &#125; // 没有这个配置markdown的snippet没法用</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>最后上传图片的脚本</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line"><span class="keyword">from</span> asyncio.subprocess <span class="keyword">import</span> DEVNULL</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">upload</span><span class="params">(images)</span>:</span></span><br><span class="line">    <span class="keyword">for</span> image <span class="keyword">in</span> images:</span><br><span class="line">        <span class="keyword">if</span> image.startswith(<span class="string">"http"</span>):</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        <span class="keyword">if</span> os.path.isfile(image):</span><br><span class="line">            createdate = time.localtime(os.stat(image).st_birthtime)</span><br><span class="line">            year = createdate.tm_year</span><br><span class="line">            month = createdate.tm_mon</span><br><span class="line">            dstpath = <span class="string">f"/Users/waderwu/blog-img/<span class="subst">&#123;year&#125;</span>/<span class="subst">&#123;month&#125;</span>"</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> os.path.isdir(dstpath):</span><br><span class="line">                os.makedirs(dstpath)</span><br><span class="line">            imgname = os.path.basename(image)</span><br><span class="line">            webp = <span class="string">f"<span class="subst">&#123;dstpath&#125;</span>/<span class="subst">&#123;imgname&#125;</span>.webp"</span></span><br><span class="line">            Image.open(image).convert(<span class="string">"RGB"</span>).save(webp, <span class="string">"webp"</span>)</span><br><span class="line">        </span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getImageOfMd</span><span class="params">(mdfile)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> open(mdfile, <span class="string">"r"</span>) <span class="keyword">as</span> f:</span><br><span class="line">        content = f.read()</span><br><span class="line">    <span class="comment"># print(content)</span></span><br><span class="line">    images = re.findall(<span class="string">r'!\[.*\]\((.*)\)'</span>, content)</span><br><span class="line">    <span class="keyword">for</span> image <span class="keyword">in</span> images:</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> image.startswith(<span class="string">"http"</span>):</span><br><span class="line">            <span class="keyword">if</span> os.path.isfile(image):</span><br><span class="line">                createdate = time.localtime(os.stat(image).st_birthtime)</span><br><span class="line">                year = createdate.tm_year</span><br><span class="line">                month = createdate.tm_mon</span><br><span class="line">                imgname = os.path.basename(image)</span><br><span class="line">                imgurl = <span class="string">f"https://raw.githubusercontent.com/waderwu/blog-img/master/<span class="subst">&#123;year&#125;</span>/<span class="subst">&#123;month&#125;</span>/<span class="subst">&#123;imgname&#125;</span>.webp"</span></span><br><span class="line">                content = content.replace(image, imgurl)</span><br><span class="line">    <span class="keyword">with</span> open(mdfile, <span class="string">"w"</span>) <span class="keyword">as</span> f:</span><br><span class="line">        f.write(content)</span><br><span class="line">    <span class="keyword">return</span> images</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">getUpdatedFile</span><span class="params">()</span>:</span></span><br><span class="line">    out = subprocess.check_output([<span class="string">"git"</span>, <span class="string">"status"</span>, <span class="string">"-s"</span>])</span><br><span class="line">    lines = out.decode().split(<span class="string">"\n"</span>)[:<span class="number">-1</span>]</span><br><span class="line">    files = []</span><br><span class="line">    <span class="keyword">for</span> line <span class="keyword">in</span> lines:</span><br><span class="line">        _, filename = line.split()</span><br><span class="line">        <span class="keyword">if</span> filename.endswith(<span class="string">".md"</span>):</span><br><span class="line">            files.append(filename)</span><br><span class="line">    <span class="keyword">return</span> files</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    <span class="comment">#upload(images)</span></span><br><span class="line">    files = getUpdatedFile()</span><br><span class="line">    <span class="comment"># print(files)</span></span><br><span class="line">    <span class="keyword">for</span> md <span class="keyword">in</span> files:</span><br><span class="line">        images = getImageOfMd(md)</span><br><span class="line">        <span class="comment"># print(md)</span></span><br><span class="line">        <span class="comment"># print(images)</span></span><br><span class="line">        upload(images)</span><br></pre></td></tr></table></figure>
+<h2 id="原文"><a href="#原文" class="headerlink" title="原文"></a>原文</h2><p>五一期间我又折腾了一下blog，改进主要有一下几点：</p>
+<ul>
+<li>修复了原blog在大屏下过宽的问题</li>
+<li>增加了github action，做到了只需提交md文件，便可自动发布</li>
+<li>增加了压缩图片，自动上传功能</li>
+</ul>
+<p>整体下来体验，还行，利用pagespeed测试，blog.sometimenaive.com在移动端的得分是94，在桌面端的得分是100，效果还不错，也可能是因为目前文章太少。</p>
+<p>目前的写作流程</p>
+<ol>
+<li>typora打开blog文件夹，开始写作，如果只是想作为草稿，可以在<code>Front Matter</code>中插入<code>published: false</code> 这样文档就会作为草稿，不会被发布</li>
+<li>本地写完之后，利用typora的全部上传本地文件功能，把图片转换成更小的webp后传到blog-img仓库</li>
+<li>推送到远程blog仓库，github action会自动编译，然后发布到waderwu.github.io</li>
+</ol>
+<h2 id="定制hexo"><a href="#定制hexo" class="headerlink" title="定制hexo"></a>定制hexo</h2><ul>
+<li>hexo版本是<code>3.9.0</code><ul>
+<li>注意这个不能在高版本的node上运行，在搞github action的时候，设置了node版本为16.x，结果生成的文件全是空文件</li>
+</ul>
+</li>
+<li>next主题，版本是NexT.Gemini <code>v7.4.0</code></li>
+</ul>
+<p>对主题进行了一些小改动包括</p>
+<ol>
+<li>将首页替换成了原archive页面，去除了archive页面</li>
+<li>修改了文件 <code>next/source/css/_variables/Pisces.styl</code>中的 <code>$content-desktop-large = 85%;</code>，更改了1200px &lt; 屏幕尺寸 &lt; 1600px 时的宽度为85%<ul>
+<li>还是有点小问题，不过在我自己的两个屏幕上显示的宽度还算凑合</li>
+</ul>
+</li>
+<li><p>增加了一个filter脚本用于解决md中不能出现<code>{{</code>的问题，在路径<code>next/scripts/filters</code>直接添加replace-brace.js</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">hexo.extend.filter.register(<span class="string">'before_post_render'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">data</span>)</span>&#123;</span><br><span class="line">    <span class="comment">//console.log("before_post_render")</span></span><br><span class="line">    <span class="comment">//console.log(data.content);</span></span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/&#123;&#123;/g</span>, <span class="string">"{{"</span>);</span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/&#125;&#125;/g</span>, <span class="string">"}}"</span>);</span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/%&#125;/g</span>, <span class="string">"%}"</span>);</span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/&#123;%/g</span>, <span class="string">"{%"</span>);</span><br><span class="line">    <span class="keyword">return</span> data;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">hexo.extend.filter.register(<span class="string">'after_post_render'</span>, <span class="function"><span class="keyword">function</span>(<span class="params">data</span>)</span>&#123;</span><br><span class="line">    <span class="comment">//console.log(data.content);</span></span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/{{/g</span>, <span class="string">"&#123;&#123;"</span>);</span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/}}/g</span>, <span class="string">"&#125;&#125;"</span>);</span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/%}/g</span>, <span class="string">"%&#125;"</span>);</span><br><span class="line">    data.content = data.content.replace(<span class="regexp">/{%/g</span>, <span class="string">"&#123;%"</span>);</span><br><span class="line">    <span class="keyword">return</span> data;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="自动化发布"><a href="#自动化发布" class="headerlink" title="自动化发布"></a>自动化发布</h2><p>前几天接触了一下github action，用它自动release，感觉挺方便，然后就想要不用它自动发布blog吧，我只要更新md文件就行，传到github上之后，就会触发action，帮我自动更新部署。</p>
+<p>目前的方案是，三个repo</p>
+<ul>
+<li>waderwu.github.io<ul>
+<li>用于存hexo生成的public文件</li>
+</ul>
+</li>
+<li>blog (private)<ul>
+<li>分支master<ul>
+<li>用于存放md文件</li>
+</ul>
+</li>
+<li>分支hexo<ul>
+<li>hexo相关文件</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>blog-img<ul>
+<li>用于存放blog的图片</li>
+</ul>
+</li>
+</ul>
+<p>主要的思路是，当master分支有push事件时，触发publis action</p>
+<ul>
+<li>clone blog master 分支到 source文件夹</li>
+<li>clone blog hexo 分支到hexo文件夹</li>
+<li>复制 source 文件夹到 hexo 文件夹</li>
+<li>安装hexo</li>
+<li>执行hexo clean，hexo g</li>
+<li>执行hexo deploy 将public文件夹推送到waderwu.github.io</li>
+</ul>
+<p>具体的<code>publish.yml</code>文件如下</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">name:</span> <span class="string">Node.js</span> <span class="string">CI</span></span><br><span class="line"><span class="attr">on:</span></span><br><span class="line">  <span class="attr">push:</span></span><br><span class="line">    <span class="attr">branches:</span> <span class="string">[</span> <span class="string">main</span> <span class="string">]</span></span><br><span class="line"><span class="attr">jobs:</span></span><br><span class="line">  <span class="attr">build:</span></span><br><span class="line">    <span class="attr">runs-on:</span> <span class="string">ubuntu-latest</span></span><br><span class="line">    <span class="attr">steps:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">clone</span> <span class="string">source</span></span><br><span class="line">      <span class="attr">uses:</span> <span class="string">actions/checkout@v3</span></span><br><span class="line">      <span class="attr">with:</span></span><br><span class="line">        <span class="attr">path:</span> <span class="string">'source'</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">run:</span> <span class="string">ls</span> <span class="string">-al</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">clone</span> <span class="string">hexo</span> <span class="string">source</span></span><br><span class="line">      <span class="attr">uses:</span> <span class="string">actions/checkout@v3</span></span><br><span class="line">      <span class="attr">with:</span></span><br><span class="line">        <span class="attr">ref:</span> <span class="string">'hexo'</span></span><br><span class="line">        <span class="attr">path:</span> <span class="string">'hexo'</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">run:</span> <span class="string">ls</span> <span class="string">-al</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">Use</span> <span class="string">Node.js</span> <span class="number">12.</span><span class="string">x</span></span><br><span class="line">      <span class="attr">uses:</span> <span class="string">actions/setup-node@v3</span></span><br><span class="line">      <span class="attr">with:</span></span><br><span class="line">        <span class="attr">node-version:</span> <span class="number">12.</span><span class="string">x</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">run:</span> <span class="string">|</span></span><br><span class="line">        <span class="string">cp</span> <span class="string">-r</span> <span class="string">source</span> <span class="string">hexo</span></span><br><span class="line">        <span class="string">cd</span> <span class="string">hexo</span></span><br><span class="line">        <span class="string">npm</span> <span class="string">install</span></span><br><span class="line">        <span class="string">ls</span> <span class="string">-al</span> </span><br><span class="line">        <span class="string">npx</span> <span class="string">hexo</span> <span class="string">clean</span></span><br><span class="line">        <span class="string">npx</span> <span class="string">hexo</span> <span class="string">g</span></span><br><span class="line">        <span class="string">ls</span> <span class="string">-alh</span> <span class="string">public</span></span><br><span class="line">        <span class="string">sed</span> <span class="string">-i</span> <span class="string">"s#repowithtoken#https://oauth2:$repotoken@github.com/waderwu/waderwu.github.io#g"</span> <span class="string">_config.yml</span></span><br><span class="line">        <span class="string">npx</span> <span class="string">hexo</span> <span class="string">d</span></span><br><span class="line">      <span class="attr">env:</span></span><br><span class="line">        <span class="attr">repotoken:</span> <span class="string">$&#123;&#123;secrets.REPO_GITHUB_TOKEN&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+<p>在折腾的时候遇到了这么几个坑</p>
+<ol>
+<li>node版本太高，导致生成的文件全为空<ul>
+<li>将版本设置为12.x</li>
+</ul>
+</li>
+<li>在使用hexo-deploy-git，要么是找不到username，要么是认证失败，不知道是不是因为<code>$GITHUB_TOKEN</code> 和<code>PAT</code>的区别<ul>
+<li>重新自己生成一个personal access token，填入到secrets中，然后_config.yml中的repo填成<code>oauth2:token@github.com/user/repo</code>这种形式</li>
+</ul>
+</li>
+</ol>
+<h2 id="上传图片"><a href="#上传图片" class="headerlink" title="上传图片"></a>上传图片</h2><p>Typora支持自定义上传图片，<a href="https://support.typora.io/Upload-Image/" target="_blank" rel="noopener">参考链接</a></p>
+<p>原本的处理方式，在blog-img图片生成webp，然后再命令行调用git，push到仓库，用的时候感觉有点慢</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/env python3</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> subprocess</span><br><span class="line"><span class="keyword">from</span> asyncio.subprocess <span class="keyword">import</span> DEVNULL</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">upload</span><span class="params">(images)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> len(images) &lt; <span class="number">1</span>:</span><br><span class="line">        sys.exit()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> image <span class="keyword">in</span> images:</span><br><span class="line">        createdate = time.localtime(os.stat(image).st_birthtime)</span><br><span class="line">        year = createdate.tm_year</span><br><span class="line">        month = createdate.tm_mon</span><br><span class="line">        dstpath = <span class="string">f"/Users/waderwu/blog-img/<span class="subst">&#123;year&#125;</span>/<span class="subst">&#123;month&#125;</span>"</span></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> os.path.isdir(dstpath):</span><br><span class="line">            os.makedirs(dstpath)</span><br><span class="line">        <span class="keyword">if</span> os.path.isfile(image):</span><br><span class="line">            imgname = os.path.basename(image)</span><br><span class="line">            webp = <span class="string">f"<span class="subst">&#123;dstpath&#125;</span>/<span class="subst">&#123;imgname&#125;</span>.webp"</span></span><br><span class="line">            Image.open(image).convert(<span class="string">"RGB"</span>).save(webp, <span class="string">"webp"</span>)</span><br><span class="line">            imgurl = <span class="string">f"https://raw.githubusercontent.com/waderwu/blog-img/master/<span class="subst">&#123;year&#125;</span>/<span class="subst">&#123;month&#125;</span>/<span class="subst">&#123;imgname&#125;</span>.webp"</span></span><br><span class="line">            print(imgurl)</span><br><span class="line">        </span><br><span class="line">    subprocess.check_output([<span class="string">"bash"</span>, <span class="string">"-c"</span>, <span class="string">f"cd /Users/waderwu/blog-img/; git pull ; git add . ; git commit -m 'add <span class="subst">&#123;imgname&#125;</span>.webp' ; git push"</span>], stderr=DEVNULL)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    images = sys.argv[<span class="number">1</span>:]</span><br><span class="line">    upload(images)</span><br></pre></td></tr></table></figure>
+<p>然后又尝试了通过github api的方式上传，但是一次只能单独上传一个文件，可能还不如通过git push的方式快，尝试了多线程但是会导致返回conflict。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">from</span> PIL <span class="keyword">import</span> Image</span><br><span class="line"><span class="keyword">from</span> io <span class="keyword">import</span> BytesIO</span><br><span class="line"><span class="keyword">from</span> threading <span class="keyword">import</span> Thread</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">upload</span><span class="params">(name, content)</span>:</span></span><br><span class="line">    token = <span class="string">"ghp_yourtoken"</span></span><br><span class="line">    url = <span class="string">f"https://api.github.com/repos/waderwu/blog-img/contents/<span class="subst">&#123;name&#125;</span>"</span></span><br><span class="line">    <span class="comment"># print(url)</span></span><br><span class="line">    headers = &#123;</span><br><span class="line">        <span class="string">"Authorization"</span>: <span class="string">f"Bearer <span class="subst">&#123;token&#125;</span>"</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    body = &#123;</span><br><span class="line">        <span class="string">"message"</span>: <span class="string">"test upload file"</span>,</span><br><span class="line">        <span class="string">"content"</span>: content</span><br><span class="line">    &#125;</span><br><span class="line">    proxies=&#123;</span><br><span class="line">        <span class="string">"https"</span>: <span class="string">"socks5://127.0.0.1:1080"</span></span><br><span class="line">    &#125;</span><br><span class="line">    r = requests.put(url, headers=headers, json=body, proxies=proxies)</span><br><span class="line">    <span class="comment"># print(r.status_code)</span></span><br><span class="line">    <span class="comment"># print(r.json())</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run</span><span class="params">(images)</span>:</span></span><br><span class="line">    <span class="keyword">if</span> len(images) &lt; <span class="number">1</span>:</span><br><span class="line">        sys.exit()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> image <span class="keyword">in</span> images:</span><br><span class="line">        createdate = time.localtime(os.stat(image).st_birthtime)</span><br><span class="line">        year = createdate.tm_year</span><br><span class="line">        month = createdate.tm_mon</span><br><span class="line">        <span class="keyword">if</span> os.path.isfile(image):</span><br><span class="line">            imgname = os.path.basename(image)</span><br><span class="line">            imgurl = <span class="string">f"https://raw.githubusercontent.com/waderwu/blog-img/master/<span class="subst">&#123;year&#125;</span>/<span class="subst">&#123;month&#125;</span>/<span class="subst">&#123;imgname&#125;</span>.webp"</span></span><br><span class="line">            print(imgurl)</span><br><span class="line"></span><br><span class="line">            webp = BytesIO()</span><br><span class="line">            Image.open(image).convert(<span class="string">"RGB"</span>).save(webp, <span class="string">"webp"</span>)</span><br><span class="line">            content = base64.b64encode(webp.getvalue()).decode()</span><br><span class="line">            name = <span class="string">f"<span class="subst">&#123;year&#125;</span>/<span class="subst">&#123;month&#125;</span>/<span class="subst">&#123;imgname&#125;</span>.webp"</span></span><br><span class="line">            upload(name, content)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:</span><br><span class="line">    images = sys.argv[<span class="number">1</span>:]</span><br><span class="line">    run(images)</span><br></pre></td></tr></table></figure>
+<p>用两张图片测试一下试试</p>
+<ul>
+<li>第一种方式<code>9.552</code></li>
+<li>第二种方式<code>10.511</code></li>
+</ul>
+<p>如果文件多，可能还是第一种方式快，那还是第一种方式吧。</p>
+<p>本来还想整自动格式化markdown，但是感觉没太大要，使用好typora即可。</p>
+<p>在用Typora的时候发现个小问题，关于换行的问题。</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/5/image-20220504190048031.png.webp" alt="image-20220504190048031" style="zoom:50%;"></p>
+<p>这样看着好像没有问题，但是从源码看到</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/5/image-20220504190208055.png.webp" alt="image-20220504190208055" style="zoom:50%;"></p>
+<p>中间有好多空行，导致在blog渲染的过程中，就会多出来一些空行</p>
+<p><img src="https://blog.sometimenaive.com/blog-img/2022/5/image-20220504190740414.png.webp" alt="image-20220504190740414" style="zoom:50%;"></p>
+<p>看看怎么解决这个问题，Typora有个专门的说明，<a href="https://support.typora.io/Line-Break/" target="_blank" rel="noopener">line-break</a> ，<del>好像也没啥好的解决方法</del>换成vscode。</p>
+<p>大概就是说Typora可见即可得的模式下，敲下一个回车，其实是相当于敲俩回车，根据经验看，我出问题一般是在list时会多出一些空行来，原本是利用回车来确定前移list的，可能用shift+tab更好，先就这样吧，写完之后认为的检查一下。</p>
+
+    </div>
+
+    
+    
+    
+        
+      
+
+      <footer class="post-footer">
+          
+            
+          
+          <div class="post-tags">
+            
+              <a href="/tags/geek/" rel="tag"># geek</a>
+            
+          </div>
+        
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-next post-nav-item">
+              
+                <a href="/2020/09/02/attack-rmi-registry-and-server-with-socket/" rel="next" title="attack-rmi-registry-and-server-with-socket">
+                  <i class="fa fa-chevron-left"></i> attack-rmi-registry-and-server-with-socket
+                </a>
+              
+            </div>
+
+            <span class="post-nav-divider"></span>
+
+            <div class="post-nav-prev post-nav-item">
+              
+                <a href="/2022/05/05/bytecodedl-cha-in-ctf/" rel="prev" title="ByteCodeDL应用篇之CHA在CTF中的应用">
+                  ByteCodeDL应用篇之CHA在CTF中的应用 <i class="fa fa-chevron-right"></i>
+                </a>
+              
+            </div>
+          </div>
+        
+      </footer>
+    
+  </div>
+  
+  
+  
+  </article>
+
+  </div>
+
+
+          </div>
+          
+
+        </div>
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+        
+        
+        
+        
+      
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#2022-05-05-更新"><span class="nav-number">1.</span> <span class="nav-text">2022-05-05 更新</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原文"><span class="nav-number">2.</span> <span class="nav-text">原文</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#定制hexo"><span class="nav-number">3.</span> <span class="nav-text">定制hexo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动化发布"><span class="nav-number">4.</span> <span class="nav-text">自动化发布</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#上传图片"><span class="nav-number">5.</span> <span class="nav-text">上传图片</span></a></li></ol></div>
+        
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yxxx</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+  <nav class="site-state motion-element">
+      <div class="site-state-item site-state-posts">
+        
+          <a href="/archives">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-categories">
+        
+          
+            <a href="/categories/">
+          
+        
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">categories</span>
+        </a>
+      </div>
+    
+      
+      
+      <div class="site-state-item site-state-tags">
+        
+          
+            <a href="/tags/">
+          
+        
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">tags</span>
+        </a>
+      </div>
+    
+  </nav>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2023</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yxxx</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.4.0</div>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+  </div>
+
+  
+
+
+  <script src="/lib/anime.min.js?v=3.1.0"></script>
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+<script src="/js/utils.js?v=7.4.0"></script><script src="/js/motion.js?v=7.4.0"></script>
+<script src="/js/schemes/pisces.js?v=7.4.0"></script>
+
+<script src="/js/next-boot.js?v=7.4.0"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
